@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: majstorhub-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: majstorhub
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - majstorhub-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend/MajstorHub.Api
+      dockerfile: Dockerfile
+    container_name: majstorhub-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=majstorhub;Username=postgres;Password=${POSTGRES_PASSWORD}
+    ports:
+      - "5007:8080"
+
+volumes:
+  majstorhub-db-data:
