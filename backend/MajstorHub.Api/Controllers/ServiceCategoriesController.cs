@@ -1,0 +1,51 @@
+using MajstorHub.Api.DTOs.ServiceCategories;
+using MajstorHub.Api.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace MajstorHub.Api.Controllers;
+
+[ApiController]
+[Route("api/service-categories")]
+public class ServiceCategoriesController(IServiceCategoryService serviceCategoryService) : ControllerBase
+{
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<ActionResult<List<ServiceCategoryResponse>>> GetAll()
+    {
+        var response = await serviceCategoryService.GetAllAsync();
+        return Ok(response);
+    }
+
+    [HttpGet("{id:int}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ServiceCategoryResponse>> GetById(int id)
+    {
+        var response = await serviceCategoryService.GetByIdAsync(id);
+        return Ok(response);
+    }
+
+    [HttpPost]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ServiceCategoryResponse>> Create(CreateServiceCategoryRequest request)
+    {
+        var response = await serviceCategoryService.CreateAsync(request);
+        return Ok(response);
+    }
+
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ServiceCategoryResponse>> Update(int id, UpdateServiceCategoryRequest request)
+    {
+        var response = await serviceCategoryService.UpdateAsync(id, request);
+        return Ok(response);
+    }
+
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        await serviceCategoryService.DeleteAsync(id);
+        return NoContent();
+    }
+}
