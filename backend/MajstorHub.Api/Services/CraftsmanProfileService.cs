@@ -3,7 +3,6 @@ using MajstorHub.Api.DTOs.Craftsmen;
 using MajstorHub.Api.Exceptions;
 using MajstorHub.Api.Mappings;
 using MajstorHub.Api.Models;
-using MajstorHub.Api.Models.Enums;
 using MajstorHub.Api.Repositories.Interfaces;
 using MajstorHub.Api.Services.Interfaces;
 
@@ -16,13 +15,8 @@ public class CraftsmanProfileService(
 {
     public async Task<CraftsmanProfileResponse> CreateAsync(Guid userId, CreateCraftsmanProfileRequest request)
     {
-        var user = await userRepository.GetByIdAsync(userId)
+        _ = await userRepository.GetByIdAsync(userId)
             ?? throw new NotFoundException($"User '{userId}' was not found.");
-
-        if (user.Role != UserRole.Craftsman)
-        {
-            throw new ValidationException("Only users with the Craftsman role can create a craftsman profile.");
-        }
 
         if (await craftsmanProfileRepository.GetByUserIdAsync(userId) is not null)
         {

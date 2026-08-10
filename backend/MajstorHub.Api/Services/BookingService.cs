@@ -15,16 +15,16 @@ public class BookingService(
 {
     public async Task<BookingResponse> CreateAsync(Guid clientUserId, CreateBookingRequest request)
     {
-        var client = await userRepository.GetByIdAsync(clientUserId)
+        _ = await userRepository.GetByIdAsync(clientUserId)
             ?? throw new NotFoundException($"User '{clientUserId}' was not found.");
-
-        if (client.Role != UserRole.Client)
-        {
-            throw new ValidationException("Only users with the Client role can create a booking.");
-        }
 
         var craftsmanProfile = await craftsmanProfileRepository.GetByUserIdAsync(request.CraftsmanProfileId)
             ?? throw new NotFoundException($"Craftsman profile '{request.CraftsmanProfileId}' was not found.");
+
+        if (clientUserId == craftsmanProfile.UserId)
+        {
+            throw new ValidationException("You cannot book your own craftsman profile.");
+        }
 
         if (!craftsmanProfile.IsAvailable)
         {
@@ -69,6 +69,16 @@ public class BookingService(
     {
         var bookings = await bookingRepository.GetByCraftsmanProfileIdAsync(craftsmanUserId);
         return bookings.Select(b => b.ToResponse()).ToList();
+    }
+
+    public async Task<List<BookingResponse>> GetForUserAsync(Guid userId)
+    {
+        var asClient = await bookingRepository.GetByClientIdAsync(userId);
+        var asCraftsman = await bookingRepository.GetByCraftsmanProfileIdAsync(userId);
+        return asClient.Concat(asCraftsman)
+            .OrderByDescending(b => b.CreatedAt)
+            .Select(b => b.ToResponse())
+            .ToList();
     }
 
     public async Task<BookingResponse> UpdateStatusAsync(Guid bookingId, Guid requestingUserId, BookingStatus newStatus)

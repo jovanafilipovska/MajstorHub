@@ -11,7 +11,7 @@ namespace MajstorHub.Api.Controllers;
 public class ReviewsController(IReviewService reviewService) : ControllerBase
 {
     [HttpPost]
-    [Authorize(Roles = "Client")]
+    [Authorize(Roles = "Client,Craftsman")]
     public async Task<ActionResult<ReviewResponse>> Create(CreateReviewRequest request)
     {
         var response = await reviewService.CreateAsync(User.GetUserId(), request);

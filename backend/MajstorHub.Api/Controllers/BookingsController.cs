@@ -12,7 +12,7 @@ namespace MajstorHub.Api.Controllers;
 public class BookingsController(IBookingService bookingService) : ControllerBase
 {
     [HttpPost]
-    [Authorize(Roles = "Client")]
+    [Authorize(Roles = "Client,Craftsman")]
     public async Task<ActionResult<BookingResponse>> Create(CreateBookingRequest request)
     {
         var response = await bookingService.CreateAsync(User.GetUserId(), request);
@@ -29,10 +29,7 @@ public class BookingsController(IBookingService bookingService) : ControllerBase
     [HttpGet("mine")]
     public async Task<ActionResult<List<BookingResponse>>> GetMine()
     {
-        var userId = User.GetUserId();
-        var response = User.IsInRole("Craftsman")
-            ? await bookingService.GetForCraftsmanAsync(userId)
-            : await bookingService.GetForClientAsync(userId);
+        var response = await bookingService.GetForUserAsync(User.GetUserId());
         return Ok(response);
     }
 

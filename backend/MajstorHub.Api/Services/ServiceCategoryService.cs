@@ -4,6 +4,7 @@ using MajstorHub.Api.Mappings;
 using MajstorHub.Api.Models;
 using MajstorHub.Api.Repositories.Interfaces;
 using MajstorHub.Api.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace MajstorHub.Api.Services;
 
@@ -61,6 +62,15 @@ public class ServiceCategoryService(IServiceCategoryRepository serviceCategoryRe
             ?? throw new NotFoundException($"Service category '{id}' was not found.");
 
         serviceCategoryRepository.Remove(category);
-        await serviceCategoryRepository.SaveChangesAsync();
+
+        try
+        {
+            await serviceCategoryRepository.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            throw new ConflictException(
+                "This category cannot be deleted because craftsmen or bookings still reference it.");
+        }
     }
 }

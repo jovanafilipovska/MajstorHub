@@ -1,85 +1,80 @@
-import { useCallback, useEffect, useState } from 'react';
+import { DarkTheme as NavDarkTheme, DefaultTheme as NavDefaultTheme, NavigationContainer } from '@react-navigation/native';
+import { adaptNavigationTheme, PaperProvider } from 'react-native-paper';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, Button, StyleSheet, Text, View } from 'react-native';
+import {
+  useFonts,
+  Nunito_400Regular,
+  Nunito_600SemiBold,
+  Nunito_700Bold,
+  Nunito_800ExtraBold,
+  Nunito_900Black,
+} from '@expo-google-fonts/nunito';
+import { AuthProvider } from './src/contexts/AuthContext';
+import { WorkModeProvider } from './src/contexts/WorkModeContext';
+import { ThemeProvider, useThemeMode } from './src/contexts/ThemeContext';
+import { LanguageProvider } from './src/contexts/LanguageContext';
+import { RootNavigator } from './src/navigation/RootNavigator';
+import { LoadingView } from './src/components/LoadingView';
+import { lightTheme, darkTheme } from './src/theme';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
+const { LightTheme: navLightTheme, DarkTheme: navDarkTheme } = adaptNavigationTheme({
+  reactNavigationLight: NavDefaultTheme,
+  reactNavigationDark: NavDarkTheme,
+  materialLight: lightTheme,
+  materialDark: darkTheme,
+});
 
-type PingState =
-  | { status: 'loading' }
-  | { status: 'success'; body: string }
-  | { status: 'error'; message: string };
+function AppShell() {
+  const { mode, isLoading } = useThemeMode();
+  const activeTheme = mode === 'dark' ? darkTheme : lightTheme;
 
-export default function App() {
-  const [ping, setPing] = useState<PingState>({ status: 'loading' });
-
-  const checkPing = useCallback(() => {
-    if (!API_URL) {
-      setPing({
-        status: 'error',
-        message: 'EXPO_PUBLIC_API_URL is not set. Check mobile/MajstorHubApp/.env',
-      });
-      return;
-    }
-
-    setPing({ status: 'loading' });
-    fetch(`${API_URL}/ping`)
-      .then(async (res) => {
-        const body = await res.text();
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ${body}`);
-        setPing({ status: 'success', body });
-      })
-      .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error);
-        setPing({ status: 'error', message });
-      });
-  }, []);
-
-  useEffect(() => {
-    checkPing();
-  }, [checkPing]);
+  if (isLoading) {
+    return (
+      <PaperProvider theme={activeTheme}>
+        <LoadingView fullScreen />
+      </PaperProvider>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>MajstorHub</Text>
-      <Text style={styles.subtitle}>API: {API_URL ?? '(not set)'}</Text>
-
-      {ping.status === 'loading' && <ActivityIndicator size="large" />}
-      {ping.status === 'success' && (
-        <Text style={styles.success}>Connected: {ping.body}</Text>
-      )}
-      {ping.status === 'error' && (
-        <Text style={styles.error}>Failed: {ping.message}</Text>
-      )}
-
-      <Button title="Retry" onPress={checkPing} />
-      <StatusBar style="auto" />
-    </View>
+    <PaperProvider theme={activeTheme}>
+      <AuthProvider>
+        <WorkModeProvider>
+          <NavigationContainer theme={mode === 'dark' ? navDarkTheme : navLightTheme}>
+            <RootNavigator />
+          </NavigationContainer>
+        </WorkModeProvider>
+      </AuthProvider>
+      <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+    </PaperProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    gap: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    fontSize: 12,
-    color: '#666',
-  },
-  success: {
-    color: 'green',
-    textAlign: 'center',
-  },
-  error: {
-    color: 'red',
-    textAlign: 'center',
-  },
-});
+export default function App() {
+  const [fontsLoaded] = useFonts({
+    Nunito_400Regular,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
+    Nunito_900Black,
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <SafeAreaProvider>
+        <LoadingView fullScreen />
+      </SafeAreaProvider>
+    );
+  }
+
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <AppShell />
+        </LanguageProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
+}

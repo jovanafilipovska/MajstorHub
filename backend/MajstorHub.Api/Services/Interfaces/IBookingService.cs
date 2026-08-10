@@ -9,5 +9,6 @@ public interface IBookingService
     Task<BookingResponse> GetByIdAsync(Guid bookingId, Guid requestingUserId);
     Task<List<BookingResponse>> GetForClientAsync(Guid clientUserId);
     Task<List<BookingResponse>> GetForCraftsmanAsync(Guid craftsmanUserId);
+    Task<List<BookingResponse>> GetForUserAsync(Guid userId);
     Task<BookingResponse> UpdateStatusAsync(Guid bookingId, Guid requestingUserId, BookingStatus newStatus);
 }

@@ -3,6 +3,7 @@ using MajstorHub.Api.Exceptions;
 using MajstorHub.Api.Mappings;
 using MajstorHub.Api.Repositories.Interfaces;
 using MajstorHub.Api.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace MajstorHub.Api.Services;
 
@@ -41,6 +42,15 @@ public class UserService(IUserRepository userRepository) : IUserService
             ?? throw new NotFoundException($"User '{id}' was not found.");
 
         userRepository.Remove(user);
-        await userRepository.SaveChangesAsync();
+
+        try
+        {
+            await userRepository.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            throw new ConflictException(
+                "This user cannot be deleted because they have existing bookings or reviews.");
+        }
     }
 }

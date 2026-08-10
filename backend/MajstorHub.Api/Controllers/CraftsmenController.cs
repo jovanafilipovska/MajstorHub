@@ -13,7 +13,7 @@ public class CraftsmenController(ICraftsmanProfileService craftsmanProfileServic
     : ControllerBase
 {
     [HttpPost("me/profile")]
-    [Authorize(Roles = "Craftsman")]
+    [Authorize(Roles = "Client,Craftsman")]
     public async Task<ActionResult<CraftsmanProfileResponse>> CreateMyProfile(CreateCraftsmanProfileRequest request)
     {
         var response = await craftsmanProfileService.CreateAsync(User.GetUserId(), request);
@@ -21,7 +21,7 @@ public class CraftsmenController(ICraftsmanProfileService craftsmanProfileServic
     }
 
     [HttpPut("me/profile")]
-    [Authorize(Roles = "Craftsman")]
+    [Authorize(Roles = "Client,Craftsman")]
     public async Task<ActionResult<CraftsmanProfileResponse>> UpdateMyProfile(UpdateCraftsmanProfileRequest request)
     {
         var response = await craftsmanProfileService.UpdateAsync(User.GetUserId(), request);
