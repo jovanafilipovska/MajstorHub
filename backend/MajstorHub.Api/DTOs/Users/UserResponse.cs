@@ -8,6 +8,8 @@ public class UserResponse
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string? PhoneNumber { get; set; }
+    public string? AddressText { get; set; }
+    public string? ProfileImageUrl { get; set; }
     public UserRole Role { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 }

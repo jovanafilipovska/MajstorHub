@@ -26,16 +26,18 @@ export function MainTabNavigator() {
           }}
         />
       )}
-      <Tab.Screen
-        name="BookingsTab"
-        component={BookingsStackNavigator}
-        options={{
-          title: 'My Bookings',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="calendar-check" color={color} size={size} />
-          ),
-        }}
-      />
+      {mode === 'craftsman' && (
+        <Tab.Screen
+          name="BookingsTab"
+          component={BookingsStackNavigator}
+          options={{
+            title: 'My Bookings',
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="calendar-check" color={color} size={size} />
+            ),
+          }}
+        />
+      )}
       <Tab.Screen
         name="ProfileTab"
         component={ProfileStackNavigator}

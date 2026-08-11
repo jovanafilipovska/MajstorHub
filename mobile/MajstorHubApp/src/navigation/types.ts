@@ -20,6 +20,11 @@ export type BookingsStackParamList = {
 
 export type ProfileStackParamList = {
   Profile: undefined;
+  Settings: undefined;
+  Favorites: undefined;
+  MyBookings: undefined;
+  BookingDetail: { bookingId: string };
+  LeaveReview: { bookingId: string; craftsmanName: string };
 };
 
 export type MainTabParamList = {

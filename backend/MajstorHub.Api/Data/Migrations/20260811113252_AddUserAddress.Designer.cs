@@ -3,6 +3,7 @@ using System;
 using MajstorHub.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MajstorHub.Api.Data.Migrations
 {
     [DbContext(typeof(MajstorHubDbContext))]
-    partial class MajstorHubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260811113252_AddUserAddress")]
+    partial class AddUserAddress
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -120,31 +123,6 @@ namespace MajstorHub.Api.Data.Migrations
                     b.HasIndex("ServiceCategoryId");
 
                     b.ToTable("CraftsmanProfiles");
-                });
-
-            modelBuilder.Entity("MajstorHub.Api.Models.Favorite", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ClientUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CraftsmanProfileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CraftsmanProfileId");
-
-                    b.HasIndex("ClientUserId", "CraftsmanProfileId")
-                        .IsUnique();
-
-                    b.ToTable("Favorites");
                 });
 
             modelBuilder.Entity("MajstorHub.Api.Models.Review", b =>
@@ -285,10 +263,6 @@ namespace MajstorHub.Api.Data.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
-                    b.Property<string>("ProfileImageUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -346,25 +320,6 @@ namespace MajstorHub.Api.Data.Migrations
                     b.Navigation("ServiceCategory");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("MajstorHub.Api.Models.Favorite", b =>
-                {
-                    b.HasOne("MajstorHub.Api.Models.User", "ClientUser")
-                        .WithMany()
-                        .HasForeignKey("ClientUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MajstorHub.Api.Models.CraftsmanProfile", "CraftsmanProfile")
-                        .WithMany()
-                        .HasForeignKey("CraftsmanProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ClientUser");
-
-                    b.Navigation("CraftsmanProfile");
                 });
 
             modelBuilder.Entity("MajstorHub.Api.Models.Review", b =>

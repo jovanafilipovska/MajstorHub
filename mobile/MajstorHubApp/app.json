@@ -30,6 +30,12 @@
         {
           "locationWhenInUsePermission": "Allow MajstorHub to use your location to show nearby craftsmen."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow MajstorHub to access your photos to set a profile picture."
+        }
       ]
     ]
   }

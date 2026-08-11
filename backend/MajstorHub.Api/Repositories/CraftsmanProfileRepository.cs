@@ -22,6 +22,7 @@ public class CraftsmanProfileRepository(MajstorHubDbContext context)
         return await DbSet
             .Include(c => c.User)
             .Include(c => c.ServiceCategory)
+            .Where(c => c.ServiceCategory!.IsApproved)
             .ToListAsync();
     }
 
@@ -30,7 +31,7 @@ public class CraftsmanProfileRepository(MajstorHubDbContext context)
         return await DbSet
             .Include(c => c.User)
             .Include(c => c.ServiceCategory)
-            .Where(c => c.ServiceCategoryId == serviceCategoryId)
+            .Where(c => c.ServiceCategoryId == serviceCategoryId && c.ServiceCategory!.IsApproved)
             .ToListAsync();
     }
 
@@ -39,7 +40,7 @@ public class CraftsmanProfileRepository(MajstorHubDbContext context)
         return await DbSet
             .Include(c => c.User)
             .Include(c => c.ServiceCategory)
-            .Where(c => c.Location != null && c.Location.Distance(origin) <= radiusMeters)
+            .Where(c => c.Location != null && c.Location.Distance(origin) <= radiusMeters && c.ServiceCategory!.IsApproved)
             .OrderBy(c => c.Location!.Distance(origin))
             .ToListAsync();
     }

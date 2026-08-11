@@ -1,85 +1,273 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, HelperText, Text, TextInput } from 'react-native-paper';
-import { updateMe } from '../../api/users';
-import { ApiError } from '../../api/client';
+import { useFocusEffect } from '@react-navigation/native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import * as ImagePicker from 'expo-image-picker';
+import { Avatar, Card, Divider, HelperText, Icon, List, Menu, Text, TouchableRipple, useTheme } from 'react-native-paper';
+import { getMyBookings } from '../../api/bookings';
+import { listFavorites } from '../../api/favorites';
+import { removeMyPhoto, uploadMyPhoto } from '../../api/users';
+import { ApiError, resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkMode } from '../../contexts/WorkModeContext';
 import { LoadingView } from '../../components/LoadingView';
-import { ThemeToggle } from '../../components/ThemeToggle';
 import { RoleSwitcher } from '../../components/RoleSwitcher';
 import { CraftsmanProfileEditor } from './CraftsmanProfileEditor';
+import type { ProfileStackParamList } from '../../navigation/types';
 
-function ClientAccountCard() {
-  const { user, token, refreshUser } = useAuth();
-  const [fullName, setFullName] = useState(user?.fullName ?? '');
-  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber ?? '');
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+type Props = NativeStackScreenProps<ProfileStackParamList, 'Profile'>;
 
-  const onSubmit = async () => {
-    if (!token) return;
-    setError(null);
-    setSuccess(null);
-    setSubmitting(true);
-    try {
-      await updateMe({ fullName: fullName.trim(), phoneNumber: phoneNumber.trim() || undefined }, token);
-      await refreshUser();
-      setSuccess('Profile saved.');
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to save profile.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+function initialsOf(fullName: string): string {
+  const initials = fullName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '');
+  return initials.join('') || '?';
+}
 
+function StatTile({ label, value, onPress }: { label: string; value: number | null; onPress: () => void }) {
+  const theme = useTheme();
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text variant="titleMedium">My Account</Text>
-      <TextInput label="Email" value={user?.email ?? ''} mode="outlined" disabled />
-      <TextInput label="Full name" value={fullName} onChangeText={setFullName} mode="outlined" />
-      <TextInput label="Phone number" value={phoneNumber} onChangeText={setPhoneNumber} mode="outlined" />
-      {error && <HelperText type="error">{error}</HelperText>}
-      {success && <HelperText type="info">{success}</HelperText>}
-      <Button mode="contained" onPress={onSubmit} loading={submitting} disabled={submitting}>
-        Save Changes
-      </Button>
-    </ScrollView>
+    <TouchableRipple onPress={onPress} borderless style={[styles.statTile, { backgroundColor: theme.colors.surface }]}>
+      <View style={styles.statTileContent}>
+        <Text variant="titleLarge" style={styles.statValue}>
+          {value ?? '–'}
+        </Text>
+        <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+          {label}
+        </Text>
+      </View>
+    </TouchableRipple>
   );
 }
 
-export function ProfileScreen() {
-  const { user } = useAuth();
+export function ProfileScreen({ navigation }: Props) {
+  const { user, token, refreshUser, logout } = useAuth();
   const { mode } = useWorkMode();
+  const theme = useTheme();
+
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [photoMenuVisible, setPhotoMenuVisible] = useState(false);
+  const [bookingCount, setBookingCount] = useState<number | null>(null);
+  const [favoriteCount, setFavoriteCount] = useState<number | null>(null);
+
+  const loadStats = useCallback(() => {
+    if (!token || mode !== 'client') return;
+    Promise.all([getMyBookings(token), listFavorites(token)])
+      .then(([bookings, favorites]) => {
+        setBookingCount(bookings.length);
+        setFavoriteCount(favorites.length);
+      })
+      .catch(() => {
+        // Stat tiles are supplementary; leave them blank rather than blocking the screen.
+      });
+  }, [token, mode]);
+
+  useFocusEffect(loadStats);
+
+  const choosePhoto = async () => {
+    setPhotoMenuVisible(false);
+    if (!token) return;
+    setPhotoError(null);
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setPhotoError('Photo library permission is required to change your profile picture.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    setUploadingPhoto(true);
+    try {
+      await uploadMyPhoto(result.assets[0].uri, token);
+      await refreshUser();
+    } catch (err) {
+      setPhotoError(err instanceof ApiError ? err.message : 'Failed to update photo.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    setPhotoMenuVisible(false);
+    if (!token) return;
+    setPhotoError(null);
+    setUploadingPhoto(true);
+    try {
+      await removeMyPhoto(token);
+      await refreshUser();
+    } catch (err) {
+      setPhotoError(err instanceof ApiError ? err.message : 'Failed to remove photo.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const onAvatarPress = () => {
+    if (user?.profileImageUrl) {
+      setPhotoMenuVisible(true);
+    } else {
+      choosePhoto();
+    }
+  };
 
   if (!user) return <LoadingView />;
 
   return (
-    <View style={styles.root}>
-      <View style={styles.toggleContainer}>
-        <RoleSwitcher />
-        <ThemeToggle />
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.avatarWrap}>
+          <Menu
+            visible={photoMenuVisible}
+            onDismiss={() => setPhotoMenuVisible(false)}
+            anchor={
+              <TouchableRipple
+                onPress={onAvatarPress}
+                disabled={uploadingPhoto}
+                borderless
+                style={styles.avatarTouchable}
+              >
+                {user.profileImageUrl ? (
+                  <Avatar.Image size={88} source={{ uri: resolveMediaUrl(user.profileImageUrl) }} />
+                ) : (
+                  <Avatar.Text
+                    size={88}
+                    label={initialsOf(user.fullName)}
+                    style={{ backgroundColor: theme.colors.primary }}
+                    labelStyle={{ color: theme.colors.onPrimary }}
+                  />
+                )}
+              </TouchableRipple>
+            }
+          >
+            <Menu.Item onPress={choosePhoto} title="Change photo" leadingIcon="image-edit-outline" />
+            <Menu.Item onPress={removePhoto} title="Remove photo" leadingIcon="delete-outline" />
+          </Menu>
+          <View style={[styles.avatarBadge, { backgroundColor: theme.colors.primary }]}>
+            <Icon source="camera" size={14} color={theme.colors.onPrimary} />
+          </View>
+        </View>
+
+        <Text variant="titleLarge" style={styles.name}>
+          {user.fullName}
+        </Text>
+        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+          {user.email}
+        </Text>
+        {photoError && <HelperText type="error">{photoError}</HelperText>}
+
+        <View style={styles.roleSwitcherWrap}>
+          <RoleSwitcher />
+        </View>
       </View>
-      <View style={styles.content}>{mode === 'craftsman' ? <CraftsmanProfileEditor /> : <ClientAccountCard />}</View>
-    </View>
+
+      {mode === 'client' ? (
+        <>
+          <View style={styles.statsRow}>
+            <StatTile label="Bookings" value={bookingCount} onPress={() => navigation.navigate('MyBookings')} />
+            <StatTile label="Saved pros" value={favoriteCount} onPress={() => navigation.navigate('Favorites')} />
+          </View>
+
+          <Text variant="labelLarge" style={styles.groupLabel}>
+            ACCOUNT
+          </Text>
+          <Card style={styles.groupCard} mode="contained">
+            <List.Item
+              title="Favorite pros"
+              onPress={() => navigation.navigate('Favorites')}
+              right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            />
+            <Divider />
+            <List.Item
+              title="Booking history"
+              onPress={() => navigation.navigate('MyBookings')}
+              right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            />
+          </Card>
+        </>
+      ) : (
+        <CraftsmanProfileEditor />
+      )}
+
+      <Text variant="labelLarge" style={styles.groupLabel}>
+        SUPPORT
+      </Text>
+      <Card style={styles.groupCard} mode="contained">
+        <List.Item
+          title="Settings"
+          onPress={() => navigation.navigate('Settings')}
+          right={(props) => <List.Icon {...props} icon="chevron-right" />}
+        />
+        <Divider />
+        <List.Item title="Log out" titleStyle={{ color: theme.colors.error }} onPress={() => logout()} />
+      </Card>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  toggleContainer: {
-    padding: 16,
-    paddingBottom: 0,
-    gap: 16,
-  },
-  content: {
-    flex: 1,
-  },
   container: {
     padding: 16,
+    gap: 8,
+    paddingBottom: 32,
+  },
+  header: {
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 16,
+  },
+  avatarWrap: {
+    marginBottom: 4,
+  },
+  avatarTouchable: {
+    borderRadius: 44,
+  },
+  avatarBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  name: {
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  roleSwitcherWrap: {
+    marginTop: 12,
+  },
+  statsRow: {
+    flexDirection: 'row',
     gap: 12,
+    marginBottom: 8,
+  },
+  statTile: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 16,
+  },
+  statTileContent: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  statValue: {
+    fontWeight: '700',
+  },
+  groupLabel: {
+    marginTop: 8,
+    marginLeft: 4,
+  },
+  groupCard: {
+    borderRadius: 12,
+    overflow: 'hidden',
   },
 });

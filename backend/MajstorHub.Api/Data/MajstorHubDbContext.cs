@@ -14,6 +14,7 @@ public class MajstorHubDbContext : DbContext
     public DbSet<ServiceCategory> ServiceCategories => Set<ServiceCategory>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<Favorite> Favorites => Set<Favorite>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,6 +27,7 @@ public class MajstorHubDbContext : DbContext
         ConfigureServiceCategory(modelBuilder);
         ConfigureBooking(modelBuilder);
         ConfigureReview(modelBuilder);
+        ConfigureFavorite(modelBuilder);
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
@@ -35,6 +37,8 @@ public class MajstorHubDbContext : DbContext
             entity.Property(u => u.FullName).HasMaxLength(150).IsRequired();
             entity.Property(u => u.Email).HasMaxLength(256).IsRequired();
             entity.Property(u => u.PhoneNumber).HasMaxLength(30);
+            entity.Property(u => u.AddressText).HasMaxLength(300);
+            entity.Property(u => u.ProfileImageUrl).HasMaxLength(500);
             entity.Property(u => u.Role).HasConversion<string>().HasMaxLength(20);
             entity.HasIndex(u => u.Email).IsUnique();
         });
@@ -133,6 +137,24 @@ public class MajstorHubDbContext : DbContext
                 .WithMany(c => c.Reviews)
                 .HasForeignKey(r => r.CraftsmanProfileId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureFavorite(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Favorite>(entity =>
+        {
+            entity.HasIndex(f => new { f.ClientUserId, f.CraftsmanProfileId }).IsUnique();
+
+            entity.HasOne(f => f.ClientUser)
+                .WithMany()
+                .HasForeignKey(f => f.ClientUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(f => f.CraftsmanProfile)
+                .WithMany()
+                .HasForeignKey(f => f.CraftsmanProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

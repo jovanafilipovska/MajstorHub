@@ -6,6 +6,8 @@ export interface UserResponse {
   fullName: string;
   email: string;
   phoneNumber?: string;
+  addressText?: string;
+  profileImageUrl?: string;
   role: Role;
   createdAt: string;
 }
@@ -90,6 +92,12 @@ export interface LoginRequest {
 export interface UpdateUserRequest {
   fullName?: string;
   phoneNumber?: string;
+  addressText?: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface CreateCraftsmanProfileRequest {

@@ -1,4 +1,11 @@
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
+const API_ORIGIN = API_URL?.replace(/\/api\/?$/, '');
+
+// Server responses reference uploaded files (e.g. profile photos) by a
+// path relative to the API origin, not the `/api` route prefix.
+export function resolveMediaUrl(path: string): string {
+  return API_ORIGIN ? `${API_ORIGIN}${path}` : path;
+}
 
 export class ApiError extends Error {
   status: number;
@@ -35,13 +42,15 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   const { method = 'GET', body, token, signal } = options;
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const isFormData = body instanceof FormData;
+  const headers: Record<string, string> = {};
+  if (!isFormData) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_URL}${path}`, {
     method,
     headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
     signal,
   });
 
@@ -66,6 +75,8 @@ export const apiClient = {
   get: <T,>(path: string, token?: string | null, signal?: AbortSignal) =>
     request<T>(path, { method: 'GET', token, signal }),
   post: <T,>(path: string, body?: unknown, token?: string | null) =>
+    request<T>(path, { method: 'POST', body, token }),
+  postForm: <T,>(path: string, body: FormData, token?: string | null) =>
     request<T>(path, { method: 'POST', body, token }),
   put: <T,>(path: string, body?: unknown, token?: string | null) =>
     request<T>(path, { method: 'PUT', body, token }),

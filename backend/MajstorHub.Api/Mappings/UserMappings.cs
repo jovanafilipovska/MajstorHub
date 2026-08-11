@@ -13,6 +13,8 @@ public static class UserMappings
             FullName = user.FullName,
             Email = user.Email,
             PhoneNumber = user.PhoneNumber,
+            AddressText = user.AddressText,
+            ProfileImageUrl = user.ProfileImageUrl,
             Role = user.Role,
             CreatedAt = user.CreatedAt
         };

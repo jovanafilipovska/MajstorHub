@@ -1,22 +1,32 @@
-import { View } from 'react-native';
-import { SegmentedButtons, Text } from 'react-native-paper';
+import { StyleSheet } from 'react-native';
+import { Button } from 'react-native-paper';
 import { useWorkMode } from '../contexts/WorkModeContext';
-import type { WorkMode } from '../contexts/WorkModeContext';
+
+const MODE_LABELS = { client: 'Customer', craftsman: 'Provider' } as const;
 
 export function RoleSwitcher() {
   const { mode, setMode } = useWorkMode();
+  const nextMode = mode === 'client' ? 'craftsman' : 'client';
 
   return (
-    <View style={{ gap: 8 }}>
-      <Text variant="labelLarge">I'm using MajstorHub as a</Text>
-      <SegmentedButtons
-        value={mode}
-        onValueChange={(value) => setMode(value as WorkMode)}
-        buttons={[
-          { value: 'client', label: 'Client', icon: 'magnify' },
-          { value: 'craftsman', label: 'Craftsman', icon: 'account-hard-hat' },
-        ]}
-      />
-    </View>
+    <Button
+      mode="outlined"
+      icon="swap-horizontal"
+      onPress={() => setMode(nextMode)}
+      style={styles.pill}
+      contentStyle={styles.pillContent}
+    >
+      {`${MODE_LABELS[mode]} mode ⇄ ${MODE_LABELS[nextMode]}`}
+    </Button>
   );
 }
+
+const styles = StyleSheet.create({
+  pill: {
+    alignSelf: 'center',
+    borderRadius: 20,
+  },
+  pillContent: {
+    paddingHorizontal: 4,
+  },
+});

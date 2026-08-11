@@ -9,4 +9,7 @@ public class UpdateUserRequest
 
     [Phone, MaxLength(30)]
     public string? PhoneNumber { get; set; }
+
+    [MaxLength(300)]
+    public string? AddressText { get; set; }
 }

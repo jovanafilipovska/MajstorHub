@@ -8,6 +8,7 @@ using MajstorHub.Api.Repositories.Interfaces;
 using MajstorHub.Api.Services;
 using MajstorHub.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -52,6 +53,7 @@ builder.Services.AddScoped<ICraftsmanProfileRepository, CraftsmanProfileReposito
 builder.Services.AddScoped<IServiceCategoryRepository, ServiceCategoryRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -60,6 +62,7 @@ builder.Services.AddScoped<ICraftsmanProfileService, CraftsmanProfileService>();
 builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 
 var app = builder.Build();
 
@@ -70,6 +73,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "Uploads");
+Directory.CreateDirectory(uploadsPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
 
 // No HTTPS redirect for now: this API is reached over plain HTTP from
 // phones on the LAN (during Expo testing) and from the Docker container,

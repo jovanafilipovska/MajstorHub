@@ -15,6 +15,9 @@ backend/**/appsettings.Development.json
 backend/**/appsettings.*.local.json
 **/secrets.json
 
+# User-uploaded files (profile photos, etc.) - never commit
+backend/**/Uploads/
+
 # =========================
 # Node / Expo / React Native (mobile/)
 # =========================
