@@ -16,10 +16,10 @@ public class CreateCraftsmanProfileRequest
     [Range(0, 80)]
     public int? YearsOfExperience { get; set; }
 
-    [Range(-90, 90)]
+    [Required, Range(-90, 90)]
     public double? Latitude { get; set; }
 
-    [Range(-180, 180)]
+    [Required, Range(-180, 180)]
     public double? Longitude { get; set; }
 
     [MaxLength(300)]

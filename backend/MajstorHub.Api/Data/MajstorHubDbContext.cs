@@ -71,12 +71,17 @@ public class MajstorHubDbContext : DbContext
             entity.Property(s => s.Description).HasMaxLength(500);
             entity.HasIndex(s => s.Name).IsUnique();
 
+            entity.HasOne(s => s.SuggestedByUser)
+                .WithMany()
+                .HasForeignKey(s => s.SuggestedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             entity.HasData(
-                new ServiceCategory { Id = 1, Name = "Electrician", Description = "Electrical installation and repair" },
-                new ServiceCategory { Id = 2, Name = "Plumber", Description = "Plumbing installation and repair" },
-                new ServiceCategory { Id = 3, Name = "Carpenter", Description = "Woodwork and furniture" },
-                new ServiceCategory { Id = 4, Name = "Painter", Description = "Interior and exterior painting" },
-                new ServiceCategory { Id = 5, Name = "Cleaner", Description = "Home and office cleaning" }
+                new ServiceCategory { Id = 1, Name = "Electrician", Description = "Electrical installation and repair", IsApproved = true },
+                new ServiceCategory { Id = 2, Name = "Plumber", Description = "Plumbing installation and repair", IsApproved = true },
+                new ServiceCategory { Id = 3, Name = "Carpenter", Description = "Woodwork and furniture", IsApproved = true },
+                new ServiceCategory { Id = 4, Name = "Painter", Description = "Interior and exterior painting", IsApproved = true },
+                new ServiceCategory { Id = 5, Name = "Cleaner", Description = "Home and office cleaning", IsApproved = true }
             );
         });
     }

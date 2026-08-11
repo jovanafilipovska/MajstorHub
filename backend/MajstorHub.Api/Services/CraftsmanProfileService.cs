@@ -52,6 +52,12 @@ public class CraftsmanProfileService(
         return profile.ToResponse(averageRating, reviewCount);
     }
 
+    public async Task<List<CraftsmanProfileResponse>> GetAllAsync()
+    {
+        var profiles = await craftsmanProfileRepository.GetAllWithDetailsAsync();
+        return await MapWithRatingsAsync(profiles);
+    }
+
     public async Task<List<CraftsmanProfileResponse>> GetByCategoryAsync(int categoryId)
     {
         var profiles = await craftsmanProfileRepository.GetByServiceCategoryAsync(categoryId);

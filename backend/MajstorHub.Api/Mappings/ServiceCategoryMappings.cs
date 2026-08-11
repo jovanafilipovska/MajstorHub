@@ -11,7 +11,8 @@ public static class ServiceCategoryMappings
         {
             Id = category.Id,
             Name = category.Name,
-            Description = category.Description
+            Description = category.Description,
+            IsApproved = category.IsApproved
         };
     }
 }

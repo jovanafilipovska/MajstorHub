@@ -5,4 +5,6 @@ namespace MajstorHub.Api.Repositories.Interfaces;
 public interface IServiceCategoryRepository : IRepository<ServiceCategory, int>
 {
     Task<ServiceCategory?> GetByNameAsync(string name);
+    Task<List<ServiceCategory>> GetApprovedAsync();
+    Task<List<ServiceCategory>> GetPendingAsync();
 }

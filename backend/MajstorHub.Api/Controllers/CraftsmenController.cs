@@ -56,7 +56,7 @@ public class CraftsmenController(ICraftsmanProfileService craftsmanProfileServic
             return Ok(response);
         }
 
-        return BadRequest("Provide either categoryId or lat/lng to search craftsmen.");
+        return Ok(await craftsmanProfileService.GetAllAsync());
     }
 
     [HttpGet("{userId:guid}/reviews")]

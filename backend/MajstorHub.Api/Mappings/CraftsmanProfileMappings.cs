@@ -21,7 +21,8 @@ public static class CraftsmanProfileMappings
             AddressText = profile.AddressText,
             IsAvailable = profile.IsAvailable,
             AverageRating = averageRating,
-            ReviewCount = reviewCount
+            ReviewCount = reviewCount,
+            CreatedAt = profile.CreatedAt
         };
     }
 }

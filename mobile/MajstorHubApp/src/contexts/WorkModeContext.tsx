@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { getCraftsmanProfile } from '../api/craftsmen';
 import { ApiError } from '../api/client';
 import { useAuth } from './AuthContext';
+import type { Role } from '../types/api';
 
 export type WorkMode = 'client' | 'craftsman';
 
@@ -22,7 +23,11 @@ export function WorkModeProvider({ children }: { children: ReactNode }) {
   const [hasCraftsmanProfile, setHasCraftsmanProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const detect = useCallback(async (userId: string) => {
+  // A freshly-registered Craftsman has no CraftsmanProfile row yet (that's a
+  // separate creation step), but they should still land in craftsman mode —
+  // showing CraftsmanProfileEditor in "create" state — rather than defaulting
+  // to client/browse just because the profile doesn't exist yet.
+  const detect = useCallback(async (userId: string, registeredRole: Role) => {
     try {
       await getCraftsmanProfile(userId);
       setHasCraftsmanProfile(true);
@@ -30,7 +35,7 @@ export function WorkModeProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
         setHasCraftsmanProfile(false);
-        setMode('client');
+        setMode(registeredRole === 'Craftsman' ? 'craftsman' : 'client');
         return;
       }
       throw err;
@@ -45,17 +50,17 @@ export function WorkModeProvider({ children }: { children: ReactNode }) {
       return;
     }
     setIsLoading(true);
-    detect(user.id)
+    detect(user.id, user.role)
       .catch(() => {
         setHasCraftsmanProfile(false);
-        setMode('client');
+        setMode(user.role === 'Craftsman' ? 'craftsman' : 'client');
       })
       .finally(() => setIsLoading(false));
   }, [user, detect]);
 
   const refreshHasCraftsmanProfile = useCallback(async () => {
     if (!user) return;
-    await detect(user.id).catch(() => setHasCraftsmanProfile(false));
+    await detect(user.id, user.role).catch(() => setHasCraftsmanProfile(false));
   }, [user, detect]);
 
   const value = useMemo<WorkModeContextValue>(

@@ -1,24 +1,35 @@
-import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Location from 'expo-location';
 import { Avatar, Chip, Icon, Menu, Searchbar, Text, useTheme } from 'react-native-paper';
 import { listServiceCategories } from '../../api/serviceCategories';
-import { listCraftsmenByCategory } from '../../api/craftsmen';
+import { listAllCraftsmen, listCraftsmenByCategory } from '../../api/craftsmen';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { Language } from '../../contexts/LanguageContext';
+import { distanceKm } from '../../utils/geo';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import type { BrowseStackParamList } from '../../navigation/types';
 import type { CraftsmanProfileResponse, ServiceCategoryResponse } from '../../types/api';
 
 type Props = NativeStackScreenProps<BrowseStackParamList, 'Home'>;
+type CategoryFilter = 'all' | number;
+interface Coordinates {
+  latitude: number;
+  longitude: number;
+}
+
+const NEAR_YOU_RADIUS_KM = 20;
+const NEAR_YOU_CARD_WIDTH = 160;
+const NEW_CARD_WIDTH = 160;
+const NEW_COUNT = 8;
 
 const LANGUAGE_LABELS: Record<Language, string> = { mk: 'MK', sq: 'SQ', en: 'EN' };
-const SUGGESTED_COUNT = 4;
 
 function initialsOf(fullName: string): string {
   const initials = fullName
@@ -29,34 +40,98 @@ function initialsOf(fullName: string): string {
   return initials.join('') || '?';
 }
 
-function CraftsmanAvatarPlaceholder({ size, tint, icon }: { size: number; tint: string; icon: string }) {
+function CraftsmanImagePlaceholder({ tint, icon }: { tint: string; icon: string }) {
   return (
-    <View style={[styles.placeholder, { width: size, height: size, backgroundColor: tint }]}>
-      <Icon source={icon} size={size * 0.42} color="#00000033" />
+    <View style={[styles.cardImage, { backgroundColor: tint }]}>
+      <Icon source={icon} size={40} color="#00000033" />
     </View>
   );
 }
+
+function formatDistance(km: number): string {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
+}
+
+function chunkPairs<T>(items: T[]): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += 2) {
+    rows.push(items.slice(i, i + 2));
+  }
+  return rows;
+}
+
+function CraftsmanCard({
+  item,
+  width,
+  distanceLabel,
+  onPress,
+}: {
+  item: CraftsmanProfileResponse;
+  width: number;
+  distanceLabel?: string | null;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable onPress={onPress} style={[styles.gridCard, { width, backgroundColor: theme.colors.surface }]}>
+      <CraftsmanImagePlaceholder tint={theme.colors.surfaceVariant} icon="account-hard-hat" />
+      <Text variant="titleSmall" numberOfLines={1} style={styles.cardName}>
+        {item.fullName}
+      </Text>
+      <Text variant="bodySmall" style={{ color: theme.colors.primary }} numberOfLines={1}>
+        {item.serviceCategoryName}
+        {item.addressText ? ` · ${item.addressText}` : ''}
+      </Text>
+      {distanceLabel && (
+        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
+         {distanceLabel} away
+        </Text>
+      )}
+      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
+        {item.averageRating ? `★ ${item.averageRating.toFixed(1)} (${item.reviewCount})` : 'No ratings yet'} ·{' '}
+        {item.hourlyRate.toFixed(0)} $/hr
+      </Text>
+    </Pressable>
+  );
+}
+
+const GRID_PADDING = 16;
+const GRID_GAP = 12;
 
 export function HomeScreen({ navigation }: Props) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { language, setLanguage } = useLanguage();
+  const { width } = useWindowDimensions();
+  const searchCardWidth = (width - GRID_PADDING * 2 - GRID_GAP) / 2;
 
   const [categories, setCategories] = useState<ServiceCategoryResponse[] | null>(null);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [craftsmen, setCraftsmen] = useState<CraftsmanProfileResponse[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const [coords, setCoords] = useState<Coordinates | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setCoords({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+      } catch (err) {
+        // Permission denied, services off, timeout, etc. — Near You just stays hidden.
+        console.warn('HomeScreen: failed to get location', err);
+      }
+    })();
+  }, []);
 
   const loadCategories = useCallback(() => {
     setError(null);
     listServiceCategories()
-      .then((result) => {
-        setCategories(result);
-        setSelectedCategoryId((current) => current ?? result[0]?.id ?? null);
-      })
+      .then(setCategories)
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Failed to load categories.'));
   }, []);
 
@@ -64,11 +139,16 @@ export function HomeScreen({ navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      if (selectedCategoryId == null) return;
-      listCraftsmenByCategory(selectedCategoryId)
+      const request = typeof categoryFilter === 'number' ? listCraftsmenByCategory(categoryFilter) : listAllCraftsmen();
+      request
         .then(setCraftsmen)
         .catch((err) => setError(err instanceof ApiError ? err.message : 'Failed to load craftsmen.'));
-    }, [selectedCategoryId]),
+    }, [categoryFilter]),
+  );
+
+  const chipItems = useMemo(
+    (): { id: CategoryFilter; name: string }[] => (categories ? [{ id: 'all', name: 'All' }, ...categories] : []),
+    [categories],
   );
 
   const filtered = useMemo(() => {
@@ -80,12 +160,32 @@ export function HomeScreen({ navigation }: Props) {
     );
   }, [craftsmen, query]);
 
-  const suggested = useMemo(
-    () => [...filtered].sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0)).slice(0, SUGGESTED_COUNT),
+  const newToMajstorHub = useMemo(
+    () =>
+      [...filtered]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, NEW_COUNT),
     [filtered],
   );
-  const suggestedIds = useMemo(() => new Set(suggested.map((item) => item.userId)), [suggested]);
-  const nearby = useMemo(() => filtered.filter((item) => !suggestedIds.has(item.userId)), [filtered, suggestedIds]);
+
+  const distanceOf = useCallback(
+    (item: CraftsmanProfileResponse): number | null => {
+      if (!coords || item.latitude == null || item.longitude == null) return null;
+      return distanceKm(coords, { latitude: item.latitude, longitude: item.longitude });
+    },
+    [coords],
+  );
+
+  const nearYou = useMemo(() => {
+    if (!coords) return [];
+    return filtered
+      .map((item) => ({ item, km: distanceOf(item) }))
+      .filter((entry): entry is { item: CraftsmanProfileResponse; km: number } => entry.km != null && entry.km <= NEAR_YOU_RADIUS_KM)
+      .sort((a, b) => a.km - b.km)
+      .map((entry) => entry.item);
+  }, [filtered, coords, distanceOf]);
+
+  const isFiltering = query.trim().length > 0 || categoryFilter !== 'all';
 
   const goToDetail = (craftsman: CraftsmanProfileResponse) =>
     navigation.navigate('CraftsmanDetail', { craftsmanUserId: craftsman.userId, craftsmanName: craftsman.fullName });
@@ -94,163 +194,146 @@ export function HomeScreen({ navigation }: Props) {
   if (!categories || !craftsmen) return <LoadingView fullScreen />;
 
   return (
-    <FlatList
+    <ScrollView
       style={{ backgroundColor: theme.colors.background }}
       contentContainerStyle={styles.list}
-      data={nearby}
-      keyExtractor={(item) => item.userId}
-      ListHeaderComponent={
-        <View style={[styles.headerArea, { paddingTop: insets.top + 24 }]}>
-          <View style={styles.topRow}>
-            <View>
-              <Text variant="labelLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-                Hello
-              </Text>
-              <Text variant="headlineSmall">{user?.fullName}</Text>
-            </View>
-            <View style={styles.topRowActions}>
-              <Menu
-                visible={langMenuOpen}
-                onDismiss={() => setLangMenuOpen(false)}
-                anchor={
-                  <Chip
-                    mode="outlined"
-                    onPress={() => setLangMenuOpen(true)}
-                    style={[styles.langChip, { borderColor: theme.colors.outline }]}
-                  >
-                    {LANGUAGE_LABELS[language]}
-                  </Chip>
-                }
+    >
+      <View style={[styles.headerArea, { paddingTop: insets.top + 24 }]}>
+        <View style={styles.topRow}>
+          <View>
+            <Text variant="labelLarge" style={{ color: theme.colors.onSurfaceVariant }}>
+              Hello
+            </Text>
+            <Text variant="headlineSmall">{user?.fullName}</Text>
+          </View>
+          <View style={styles.topRowActions}>
+            <Menu
+              visible={langMenuOpen}
+              onDismiss={() => setLangMenuOpen(false)}
+              anchor={
+                <Chip
+                  mode="outlined"
+                  onPress={() => setLangMenuOpen(true)}
+                  style={[styles.langChip, { borderColor: theme.colors.outline }]}
+                >
+                  {LANGUAGE_LABELS[language]}
+                </Chip>
+              }
+            >
+              {(Object.keys(LANGUAGE_LABELS) as Language[]).map((code) => (
+                <Menu.Item
+                  key={code}
+                  onPress={() => {
+                    setLanguage(code);
+                    setLangMenuOpen(false);
+                  }}
+                  title={LANGUAGE_LABELS[code]}
+                />
+              ))}
+            </Menu>
+            <Pressable onPress={() => navigation.getParent()?.navigate('ProfileTab' as never)}>
+              <Avatar.Text
+                size={40}
+                label={initialsOf(user?.fullName ?? '?')}
+                style={{ backgroundColor: theme.colors.primary }}
+                labelStyle={{ color: theme.colors.onPrimary }}
+              />
+            </Pressable>
+          </View>
+        </View>
+
+        <Searchbar
+          placeholder="Search services"
+          value={query}
+          onChangeText={setQuery}
+          style={[styles.searchbar, { backgroundColor: theme.colors.surface }]}
+          elevation={0}
+        />
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+          {chipItems.map((item) => {
+            const isSelected = item.id === categoryFilter;
+            return (
+              <Chip
+                key={String(item.id)}
+                selected={isSelected}
+                showSelectedCheck={false}
+                onPress={() => setCategoryFilter(item.id)}
+                style={[
+                  styles.categoryChip,
+                  {
+                    backgroundColor: isSelected ? theme.colors.primary : theme.colors.surface,
+                    borderColor: isSelected ? theme.colors.primary : theme.colors.outline,
+                  },
+                ]}
+                textStyle={{ color: isSelected ? theme.colors.onPrimary : theme.colors.onSurface }}
               >
-                {(Object.keys(LANGUAGE_LABELS) as Language[]).map((code) => (
-                  <Menu.Item
-                    key={code}
-                    onPress={() => {
-                      setLanguage(code);
-                      setLangMenuOpen(false);
-                    }}
-                    title={LANGUAGE_LABELS[code]}
+                {item.name}
+              </Chip>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      {!isFiltering && newToMajstorHub.length > 0 && (
+        <View style={styles.section}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            New to MajstorHub
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.nearYouRow}>
+            {newToMajstorHub.map((item) => (
+              <CraftsmanCard key={item.userId} item={item} width={NEW_CARD_WIDTH} onPress={() => goToDetail(item)} />
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {isFiltering && (
+        <View style={styles.section}>
+          {filtered.length === 0 ? (
+            <Text style={[styles.empty, { color: theme.colors.onSurfaceVariant }]}>No craftsmen found.</Text>
+          ) : (
+            chunkPairs(filtered).map((row, index) => (
+              <View key={index} style={styles.searchResultRow}>
+                {row.map((item) => (
+                  <CraftsmanCard
+                    key={item.userId}
+                    item={item}
+                    width={searchCardWidth}
+                    onPress={() => goToDetail(item)}
                   />
                 ))}
-              </Menu>
-              <Pressable onPress={() => navigation.getParent()?.navigate('ProfileTab' as never)}>
-                <Avatar.Text
-                  size={40}
-                  label={initialsOf(user?.fullName ?? '?')}
-                  style={{ backgroundColor: theme.colors.primary }}
-                  labelStyle={{ color: theme.colors.onPrimary }}
-                />
-              </Pressable>
-            </View>
-          </View>
-
-          <Searchbar
-            placeholder="Search services"
-            value={query}
-            onChangeText={setQuery}
-            style={[styles.searchbar, { backgroundColor: theme.colors.surface }]}
-            elevation={0}
-          />
-
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={categories}
-            keyExtractor={(item) => String(item.id)}
-            contentContainerStyle={styles.chipRow}
-            renderItem={({ item }) => {
-              const isSelected = item.id === selectedCategoryId;
-              return (
-                <Chip
-                  selected={isSelected}
-                  showSelectedCheck={false}
-                  onPress={() => setSelectedCategoryId(item.id)}
-                  style={[
-                    styles.categoryChip,
-                    {
-                      backgroundColor: isSelected ? theme.colors.primary : theme.colors.surface,
-                      borderColor: isSelected ? theme.colors.primary : theme.colors.outline,
-                    },
-                  ]}
-                  textStyle={{ color: isSelected ? theme.colors.onPrimary : theme.colors.onSurface }}
-                >
-                  {item.name}
-                </Chip>
-              );
-            }}
-          />
-
-          {suggested.length > 0 && (
-            <View style={styles.section}>
-              <Text variant="titleMedium" style={styles.sectionTitle}>
-                ✨ AI picks for you
-              </Text>
-              <FlatList
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                data={suggested}
-                keyExtractor={(item) => item.userId}
-                contentContainerStyle={styles.suggestedRow}
-                renderItem={({ item }) => (
-                  <Pressable
-                    onPress={() => goToDetail(item)}
-                    style={[styles.suggestedCard, { backgroundColor: theme.colors.surface }]}
-                  >
-                    <View>
-                      <CraftsmanAvatarPlaceholder
-                        size={140}
-                        tint={theme.colors.surfaceVariant}
-                        icon="account-hard-hat"
-                      />
-                      <Chip
-                        compact
-                        style={[styles.aiBadge, { backgroundColor: theme.colors.primaryContainer }]}
-                        textStyle={[styles.aiBadgeText, { color: theme.colors.onPrimaryContainer }]}
-                      >
-                        AI SUGGESTED
-                      </Chip>
-                    </View>
-                    <Text variant="titleSmall" numberOfLines={1} style={styles.cardName}>
-                      {item.fullName}
-                    </Text>
-                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
-                      {item.serviceCategoryName}
-                      {item.addressText ? ` · ${item.addressText}` : ''}
-                    </Text>
-                  </Pressable>
-                )}
-              />
-            </View>
+              </View>
+            ))
           )}
-
-          <Text variant="titleMedium" style={[styles.sectionTitle, styles.nearYouTitle]}>
-            Near you
-          </Text>
         </View>
-      }
-      ListEmptyComponent={
-        <Text style={[styles.empty, { color: theme.colors.onSurfaceVariant }]}>No craftsmen found.</Text>
-      }
-      renderItem={({ item }) => (
-        <Pressable
-          onPress={() => goToDetail(item)}
-          style={[styles.nearCard, { backgroundColor: theme.colors.surface }]}
-        >
-          <CraftsmanAvatarPlaceholder size={56} tint={theme.colors.surfaceVariant} icon="account-hard-hat" />
-          <View style={styles.nearInfo}>
-            <Text variant="titleSmall">{item.fullName}</Text>
-            <Text variant="bodySmall" style={{ color: theme.colors.primary }} numberOfLines={1}>
-              {item.serviceCategoryName}
-              {item.addressText ? ` · ${item.addressText}` : ''}
-            </Text>
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              {item.averageRating ? `★ ${item.averageRating.toFixed(1)} (${item.reviewCount})` : 'No ratings yet'} ·{' '}
-              {item.hourlyRate.toFixed(0)} ден/ч
-            </Text>
-          </View>
-        </Pressable>
       )}
-    />
+
+      {!isFiltering && coords && (
+        <View style={styles.section}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            Near Me
+          </Text>
+          {nearYou.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.nearYouRow}>
+              {nearYou.map((item) => (
+                <CraftsmanCard
+                  key={item.userId}
+                  item={item}
+                  width={NEAR_YOU_CARD_WIDTH}
+                  distanceLabel={formatDistance(distanceOf(item)!)}
+                  onPress={() => goToDetail(item)}
+                />
+              ))}
+            </ScrollView>
+          ) : (
+            <Text variant="bodySmall" style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>
+              No craftsmen within {NEAR_YOU_RADIUS_KM}km of you.
+            </Text>
+          )}
+        </View>
+      )}
+    </ScrollView>
   );
 }
 
@@ -260,6 +343,7 @@ const styles = StyleSheet.create({
   },
   headerArea: {
     gap: 16,
+    marginBottom: 8,
   },
   topRow: {
     flexDirection: 'row',
@@ -293,48 +377,31 @@ const styles = StyleSheet.create({
   sectionTitle: {
     paddingHorizontal: 16,
   },
-  nearYouTitle: {
-    marginTop: -4,
-  },
-  suggestedRow: {
+  nearYouRow: {
     paddingHorizontal: 16,
     gap: 12,
   },
-  suggestedCard: {
-    width: 160,
+  searchResultRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  gridCard: {
     borderRadius: 16,
     padding: 10,
     gap: 6,
+    marginBottom: 12,
   },
-  cardName: {
-    marginTop: 2,
-  },
-  aiBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-  },
-  aiBadgeText: {
-    fontSize: 10,
-  },
-  placeholder: {
+  cardImage: {
+    width: '100%',
+    aspectRatio: 1,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  nearCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    padding: 12,
-    borderRadius: 16,
-  },
-  nearInfo: {
-    flex: 1,
-    gap: 2,
+  cardName: {
+    marginTop: 2,
   },
   empty: {
     textAlign: 'center',

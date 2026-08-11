@@ -15,4 +15,5 @@ public class CraftsmanProfileResponse
     public bool IsAvailable { get; set; }
     public double? AverageRating { get; set; }
     public int ReviewCount { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 }

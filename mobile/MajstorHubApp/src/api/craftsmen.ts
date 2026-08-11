@@ -30,6 +30,10 @@ export function listCraftsmenByCategory(categoryId: number): Promise<CraftsmanPr
   return apiClient.get<CraftsmanProfileResponse[]>(`/craftsmen?categoryId=${categoryId}`);
 }
 
+export function listAllCraftsmen(): Promise<CraftsmanProfileResponse[]> {
+  return apiClient.get<CraftsmanProfileResponse[]>('/craftsmen');
+}
+
 export function getCraftsmanReviews(userId: string): Promise<ReviewResponse[]> {
   return apiClient.get<ReviewResponse[]>(`/craftsmen/${userId}/reviews`);
 }

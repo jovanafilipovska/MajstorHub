@@ -17,6 +17,14 @@ public class CraftsmanProfileRepository(MajstorHubDbContext context)
             .FirstOrDefaultAsync(c => c.UserId == userId);
     }
 
+    public async Task<List<CraftsmanProfile>> GetAllWithDetailsAsync()
+    {
+        return await DbSet
+            .Include(c => c.User)
+            .Include(c => c.ServiceCategory)
+            .ToListAsync();
+    }
+
     public async Task<List<CraftsmanProfile>> GetByServiceCategoryAsync(int serviceCategoryId)
     {
         return await DbSet

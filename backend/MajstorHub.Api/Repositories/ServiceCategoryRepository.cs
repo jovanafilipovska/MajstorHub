@@ -12,4 +12,14 @@ public class ServiceCategoryRepository(MajstorHubDbContext context)
     {
         return await DbSet.FirstOrDefaultAsync(c => c.Name == name);
     }
+
+    public async Task<List<ServiceCategory>> GetApprovedAsync()
+    {
+        return await DbSet.Where(c => c.IsApproved).ToListAsync();
+    }
+
+    public async Task<List<ServiceCategory>> GetPendingAsync()
+    {
+        return await DbSet.Where(c => !c.IsApproved).ToListAsync();
+    }
 }

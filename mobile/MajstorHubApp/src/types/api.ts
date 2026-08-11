@@ -20,12 +20,15 @@ export interface ServiceCategoryResponse {
   id: number;
   name: string;
   description?: string;
+  isApproved: boolean;
 }
 
 export interface CreateServiceCategoryRequest {
   name: string;
   description?: string;
 }
+
+export type UpdateServiceCategoryRequest = Partial<CreateServiceCategoryRequest>;
 
 export interface CraftsmanProfileResponse {
   userId: string;
@@ -41,6 +44,7 @@ export interface CraftsmanProfileResponse {
   isAvailable: boolean;
   averageRating?: number;
   reviewCount: number;
+  createdAt: string;
 }
 
 export interface BookingResponse {

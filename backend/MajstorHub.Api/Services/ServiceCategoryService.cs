@@ -12,7 +12,13 @@ public class ServiceCategoryService(IServiceCategoryRepository serviceCategoryRe
 {
     public async Task<List<ServiceCategoryResponse>> GetAllAsync()
     {
-        var categories = await serviceCategoryRepository.GetAllAsync();
+        var categories = await serviceCategoryRepository.GetApprovedAsync();
+        return categories.Select(c => c.ToResponse()).ToList();
+    }
+
+    public async Task<List<ServiceCategoryResponse>> GetPendingAsync()
+    {
+        var categories = await serviceCategoryRepository.GetPendingAsync();
         return categories.Select(c => c.ToResponse()).ToList();
     }
 
@@ -33,10 +39,45 @@ public class ServiceCategoryService(IServiceCategoryRepository serviceCategoryRe
         var category = new ServiceCategory
         {
             Name = request.Name,
-            Description = request.Description
+            Description = request.Description,
+            IsApproved = true
         };
 
         await serviceCategoryRepository.AddAsync(category);
+        await serviceCategoryRepository.SaveChangesAsync();
+
+        return category.ToResponse();
+    }
+
+    public async Task<ServiceCategoryResponse> SuggestAsync(Guid userId, CreateServiceCategoryRequest request)
+    {
+        if (await serviceCategoryRepository.GetByNameAsync(request.Name) is not null)
+        {
+            throw new ConflictException($"A service category named '{request.Name}' already exists.");
+        }
+
+        var category = new ServiceCategory
+        {
+            Name = request.Name,
+            Description = request.Description,
+            IsApproved = false,
+            SuggestedByUserId = userId
+        };
+
+        await serviceCategoryRepository.AddAsync(category);
+        await serviceCategoryRepository.SaveChangesAsync();
+
+        return category.ToResponse();
+    }
+
+    public async Task<ServiceCategoryResponse> ApproveAsync(int id)
+    {
+        var category = await serviceCategoryRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException($"Service category '{id}' was not found.");
+
+        category.IsApproved = true;
+
+        serviceCategoryRepository.Update(category);
         await serviceCategoryRepository.SaveChangesAsync();
 
         return category.ToResponse();

@@ -24,7 +24,13 @@
     "plugins": [
       "expo-secure-store",
       "@react-native-community/datetimepicker",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow MajstorHub to use your location to show nearby craftsmen."
+        }
+      ]
     ]
   }
 }
