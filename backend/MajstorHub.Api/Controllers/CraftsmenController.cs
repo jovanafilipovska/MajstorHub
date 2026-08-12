@@ -66,4 +66,12 @@ public class CraftsmenController(ICraftsmanProfileService craftsmanProfileServic
         var response = await reviewService.GetForCraftsmanAsync(userId);
         return Ok(response);
     }
+
+    [HttpPatch("{userId:guid}/verify")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<CraftsmanProfileResponse>> Verify(Guid userId, VerifyCraftsmanRequest request)
+    {
+        var response = await craftsmanProfileService.VerifyAsync(userId, request.IsVerified);
+        return Ok(response);
+    }
 }

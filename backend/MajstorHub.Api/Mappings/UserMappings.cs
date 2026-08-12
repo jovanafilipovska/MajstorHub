@@ -10,10 +10,15 @@ public static class UserMappings
         return new UserResponse
         {
             Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
             FullName = user.FullName,
             Email = user.Email,
             PhoneNumber = user.PhoneNumber,
-            AddressText = user.AddressText,
+            Street = user.Street,
+            HouseNumber = user.HouseNumber,
+            City = user.City,
+            Country = user.Country,
             ProfileImageUrl = user.ProfileImageUrl,
             Role = user.Role,
             CreatedAt = user.CreatedAt

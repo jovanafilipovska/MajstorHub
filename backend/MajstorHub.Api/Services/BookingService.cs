@@ -5,14 +5,20 @@ using MajstorHub.Api.Models;
 using MajstorHub.Api.Models.Enums;
 using MajstorHub.Api.Repositories.Interfaces;
 using MajstorHub.Api.Services.Interfaces;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 
 namespace MajstorHub.Api.Services;
 
 public class BookingService(
     IBookingRepository bookingRepository,
     ICraftsmanProfileRepository craftsmanProfileRepository,
-    IUserRepository userRepository) : IBookingService
+    IUserRepository userRepository,
+    IWebHostEnvironment webHostEnvironment) : IBookingService
 {
+    private static readonly string[] AllowedImageExtensions = [".jpg", ".jpeg", ".png"];
+    private const int MaxPhotosPerBooking = 6;
+
     public async Task<BookingResponse> CreateAsync(Guid clientUserId, CreateBookingRequest request)
     {
         _ = await userRepository.GetByIdAsync(clientUserId)
@@ -39,6 +45,8 @@ public class BookingService(
             ServiceCategoryId = request.ServiceCategoryId,
             Description = request.Description,
             Address = request.Address,
+            Latitude = request.Latitude,
+            Longitude = request.Longitude,
             ScheduledAt = request.ScheduledAt,
             Status = BookingStatus.Pending,
             CreatedAt = DateTimeOffset.UtcNow,
@@ -103,6 +111,58 @@ public class BookingService(
 
         booking.Status = newStatus;
         booking.UpdatedAt = DateTimeOffset.UtcNow;
+
+        bookingRepository.Update(booking);
+        await bookingRepository.SaveChangesAsync();
+
+        return booking.ToResponse();
+    }
+
+    public async Task<BookingResponse> UploadPhotosAsync(Guid bookingId, Guid requestingUserId, List<IFormFile> files)
+    {
+        var booking = await bookingRepository.GetByIdWithDetailsAsync(bookingId)
+            ?? throw new NotFoundException($"Booking '{bookingId}' was not found.");
+
+        if (requestingUserId != booking.ClientId)
+        {
+            throw new ForbiddenException("Only the client who made this booking can attach photos.");
+        }
+
+        if (files.Count == 0)
+        {
+            throw new ValidationException("No photo files were provided.");
+        }
+
+        if (booking.PhotoUrls.Count + files.Count > MaxPhotosPerBooking)
+        {
+            throw new ValidationException($"A booking can have at most {MaxPhotosPerBooking} photos.");
+        }
+
+        foreach (var file in files)
+        {
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!AllowedImageExtensions.Contains(extension))
+            {
+                throw new ValidationException("Only JPG and PNG images are supported.");
+            }
+        }
+
+        var uploadsPath = Path.Combine(webHostEnvironment.ContentRootPath, "Uploads", "bookings", bookingId.ToString());
+        Directory.CreateDirectory(uploadsPath);
+
+        foreach (var file in files)
+        {
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var fileName = $"{Guid.NewGuid()}{extension}";
+            var filePath = Path.Combine(uploadsPath, fileName);
+
+            await using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            booking.PhotoUrls.Add($"/uploads/bookings/{bookingId}/{fileName}");
+        }
 
         bookingRepository.Update(booking);
         await bookingRepository.SaveChangesAsync();

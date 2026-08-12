@@ -3,10 +3,15 @@ export type BookingStatus = 'Pending' | 'Accepted' | 'Rejected' | 'Completed' | 
 
 export interface UserResponse {
   id: string;
+  firstName: string;
+  lastName: string;
   fullName: string;
   email: string;
   phoneNumber?: string;
-  addressText?: string;
+  street?: string;
+  houseNumber?: string;
+  city?: string;
+  country?: string;
   profileImageUrl?: string;
   role: Role;
   createdAt: string;
@@ -35,8 +40,10 @@ export type UpdateServiceCategoryRequest = Partial<CreateServiceCategoryRequest>
 export interface CraftsmanProfileResponse {
   userId: string;
   fullName: string;
+  profileImageUrl?: string;
   serviceCategoryId: number;
   serviceCategoryName: string;
+  businessName?: string;
   bio?: string;
   hourlyRate: number;
   yearsOfExperience?: number;
@@ -44,6 +51,7 @@ export interface CraftsmanProfileResponse {
   longitude?: number;
   addressText?: string;
   isAvailable: boolean;
+  isVerified: boolean;
   averageRating?: number;
   reviewCount: number;
   createdAt: string;
@@ -53,11 +61,16 @@ export interface BookingResponse {
   id: string;
   clientId: string;
   clientName: string;
+  clientProfileImageUrl?: string;
   craftsmanProfileId: string;
   craftsmanName: string;
+  craftsmanProfileImageUrl?: string;
   serviceCategoryName: string;
   description: string;
   address: string;
+  latitude?: number;
+  longitude?: number;
+  photoUrls: string[];
   scheduledAt?: string;
   status: BookingStatus;
   priceQuote?: number;
@@ -77,7 +90,8 @@ export interface ReviewResponse {
 }
 
 export interface RegisterRequest {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   phoneNumber?: string;
@@ -90,9 +104,14 @@ export interface LoginRequest {
 }
 
 export interface UpdateUserRequest {
-  fullName?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
   phoneNumber?: string;
-  addressText?: string;
+  street?: string;
+  houseNumber?: string;
+  city?: string;
+  country?: string;
 }
 
 export interface ChangePasswordRequest {
@@ -102,6 +121,7 @@ export interface ChangePasswordRequest {
 
 export interface CreateCraftsmanProfileRequest {
   serviceCategoryId: number;
+  businessName?: string;
   bio?: string;
   hourlyRate: number;
   yearsOfExperience?: number;
@@ -119,6 +139,8 @@ export interface CreateBookingRequest {
   serviceCategoryId: number;
   description: string;
   address: string;
+  latitude?: number;
+  longitude?: number;
   scheduledAt?: string;
 }
 

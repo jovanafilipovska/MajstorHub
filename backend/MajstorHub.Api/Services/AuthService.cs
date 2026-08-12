@@ -33,7 +33,8 @@ public class AuthService(IUserRepository userRepository, IOptions<JwtSettings> j
         var user = new User
         {
             Id = Guid.NewGuid(),
-            FullName = request.FullName,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
             Email = request.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             PhoneNumber = request.PhoneNumber,

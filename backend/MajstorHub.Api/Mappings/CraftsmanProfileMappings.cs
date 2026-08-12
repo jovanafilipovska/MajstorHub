@@ -11,8 +11,10 @@ public static class CraftsmanProfileMappings
         {
             UserId = profile.UserId,
             FullName = profile.User.FullName,
+            ProfileImageUrl = profile.User.ProfileImageUrl,
             ServiceCategoryId = profile.ServiceCategoryId,
             ServiceCategoryName = profile.ServiceCategory.Name,
+            BusinessName = profile.BusinessName,
             Bio = profile.Bio,
             HourlyRate = profile.HourlyRate,
             YearsOfExperience = profile.YearsOfExperience,
@@ -20,6 +22,7 @@ public static class CraftsmanProfileMappings
             Longitude = profile.Location?.X,
             AddressText = profile.AddressText,
             IsAvailable = profile.IsAvailable,
+            IsVerified = profile.IsVerified,
             AverageRating = averageRating,
             ReviewCount = reviewCount,
             CreatedAt = profile.CreatedAt

@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { SettingsScreen } from '../screens/profile/SettingsScreen';
 import { FavoritesScreen } from '../screens/profile/FavoritesScreen';
+import { CraftsmanProfileEditor } from '../screens/profile/CraftsmanProfileEditor';
 import { MyBookingsScreen } from '../screens/bookings/MyBookingsScreen';
 import { BookingDetailScreen } from '../screens/bookings/BookingDetailScreen';
 import { LeaveReviewScreen } from '../screens/bookings/LeaveReviewScreen';
@@ -18,6 +19,7 @@ export function ProfileStackNavigator() {
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: 'Booking History' }} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} options={{ title: 'Booking' }} />
       <Stack.Screen name="LeaveReview" component={LeaveReviewScreen} options={{ title: 'Leave a Review' }} />
+      <Stack.Screen name="BusinessProfile" component={CraftsmanProfileEditor} options={{ title: 'Business Profile' }} />
     </Stack.Navigator>
   );
 }

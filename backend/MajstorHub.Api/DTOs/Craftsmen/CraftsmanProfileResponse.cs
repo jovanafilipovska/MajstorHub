@@ -4,8 +4,10 @@ public class CraftsmanProfileResponse
 {
     public Guid UserId { get; set; }
     public string FullName { get; set; } = string.Empty;
+    public string? ProfileImageUrl { get; set; }
     public int ServiceCategoryId { get; set; }
     public string ServiceCategoryName { get; set; } = string.Empty;
+    public string? BusinessName { get; set; }
     public string? Bio { get; set; }
     public decimal HourlyRate { get; set; }
     public int? YearsOfExperience { get; set; }
@@ -13,6 +15,7 @@ public class CraftsmanProfileResponse
     public double? Longitude { get; set; }
     public string? AddressText { get; set; }
     public bool IsAvailable { get; set; }
+    public bool IsVerified { get; set; }
     public double? AverageRating { get; set; }
     public int ReviewCount { get; set; }
     public DateTimeOffset CreatedAt { get; set; }

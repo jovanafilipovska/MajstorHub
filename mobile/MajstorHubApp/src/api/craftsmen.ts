@@ -37,3 +37,11 @@ export function listAllCraftsmen(): Promise<CraftsmanProfileResponse[]> {
 export function getCraftsmanReviews(userId: string): Promise<ReviewResponse[]> {
   return apiClient.get<ReviewResponse[]>(`/craftsmen/${userId}/reviews`);
 }
+
+export function verifyCraftsman(
+  userId: string,
+  isVerified: boolean,
+  token: string,
+): Promise<CraftsmanProfileResponse> {
+  return apiClient.patch<CraftsmanProfileResponse>(`/craftsmen/${userId}/verify`, { isVerified }, token);
+}

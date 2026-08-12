@@ -10,6 +10,9 @@ public class Booking
     public int ServiceCategoryId { get; set; }
     public string Description { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public List<string> PhotoUrls { get; set; } = new();
     public DateTimeOffset? ScheduledAt { get; set; }
     public BookingStatus Status { get; set; } = BookingStatus.Pending;
     public decimal? PriceQuote { get; set; }

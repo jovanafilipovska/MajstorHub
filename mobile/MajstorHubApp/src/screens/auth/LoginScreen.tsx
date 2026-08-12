@@ -12,6 +12,7 @@ export function LoginScreen({ navigation }: Props) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -47,7 +48,13 @@ export function LoginScreen({ navigation }: Props) {
         label="Password"
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
+        secureTextEntry={!passwordVisible}
+        right={
+          <TextInput.Icon
+            icon={passwordVisible ? 'eye-off' : 'eye'}
+            onPress={() => setPasswordVisible((visible) => !visible)}
+          />
+        }
         mode="outlined"
       />
 

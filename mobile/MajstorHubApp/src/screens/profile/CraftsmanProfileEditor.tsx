@@ -1,23 +1,26 @@
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { Button, Dialog, HelperText, Portal, Switch, Text, TextInput } from 'react-native-paper';
+import { Button, Chip, Dialog, HelperText, Portal, Text, TextInput, useTheme } from 'react-native-paper';
 import { createMyProfile, getCraftsmanProfile, updateMyProfile } from '../../api/craftsmen';
 import { listServiceCategories, suggestServiceCategory } from '../../api/serviceCategories';
-import { ApiError } from '../../api/client';
+import { removeMyPhoto, uploadMyPhoto } from '../../api/users';
+import { ApiError, resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkMode } from '../../contexts/WorkModeContext';
 import { LoadingView } from '../../components/LoadingView';
-import { CategoryPickerField } from '../../components/CategoryPickerField';
 import type { CraftsmanProfileResponse, ServiceCategoryResponse } from '../../types/api';
 
 export function CraftsmanProfileEditor() {
-  const { user, token } = useAuth();
+  const { user, token, refreshUser } = useAuth();
   const { refreshHasCraftsmanProfile } = useWorkMode();
+  const theme = useTheme();
   const [categories, setCategories] = useState<ServiceCategoryResponse[]>([]);
   const [mode, setMode] = useState<'create' | 'edit' | null>(null);
 
+  const [businessName, setBusinessName] = useState('');
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [bio, setBio] = useState('');
   const [hourlyRate, setHourlyRate] = useState('');
@@ -27,7 +30,7 @@ export function CraftsmanProfileEditor() {
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [addressText, setAddressText] = useState('');
-  const [isAvailable, setIsAvailable] = useState(true);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -76,6 +79,7 @@ export function CraftsmanProfileEditor() {
         setCategories(categoriesResult);
         if (profile) {
           setMode('edit');
+          setBusinessName(profile.businessName ?? '');
           setCategoryId(profile.serviceCategoryId);
           setBio(profile.bio ?? '');
           setHourlyRate(String(profile.hourlyRate));
@@ -83,7 +87,6 @@ export function CraftsmanProfileEditor() {
           setLatitude(profile.latitude ?? null);
           setLongitude(profile.longitude ?? null);
           setAddressText(profile.addressText ?? '');
-          setIsAvailable(profile.isAvailable);
         } else {
           setMode('create');
           captureLocation();
@@ -125,6 +128,46 @@ export function CraftsmanProfileEditor() {
     }
   };
 
+  const choosePhoto = async () => {
+    if (!token) return;
+    setError(null);
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setError('Photo library permission is required to set a business photo.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    setUploadingPhoto(true);
+    try {
+      await uploadMyPhoto(result.assets[0].uri, token);
+      await refreshUser();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to update photo.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    if (!token) return;
+    setError(null);
+    setUploadingPhoto(true);
+    try {
+      await removeMyPhoto(token);
+      await refreshUser();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to remove photo.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   if (!user || mode === null) return <LoadingView />;
 
   const parsedRate = Number(hourlyRate);
@@ -151,6 +194,7 @@ export function CraftsmanProfileEditor() {
     try {
       const payload = {
         serviceCategoryId: categoryId as number,
+        businessName: businessName.trim() || undefined,
         bio: bio.trim() || undefined,
         hourlyRate: parsedRate,
         yearsOfExperience: parsedYears,
@@ -163,7 +207,7 @@ export function CraftsmanProfileEditor() {
         setMode('edit');
         await refreshHasCraftsmanProfile();
       } else {
-        await updateMyProfile({ ...payload, isAvailable }, token);
+        await updateMyProfile(payload, token);
       }
       setSuccess('Profile saved.');
     } catch (err) {
@@ -174,21 +218,71 @@ export function CraftsmanProfileEditor() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text variant="titleMedium">{mode === 'create' ? 'Create Your Craftsman Profile' : 'Edit Your Profile'}</Text>
+    <View style={styles.container}>
+      <Text variant="titleLarge" style={styles.title}>
+        {mode === 'create' ? 'Set up your business' : 'Business Profile'}
+      </Text>
 
-      <CategoryPickerField categories={categories} selectedCategoryId={categoryId} onSelect={setCategoryId} />
+      <Pressable onPress={choosePhoto} disabled={uploadingPhoto}>
+        <View style={[styles.photoTile, { borderColor: theme.colors.outline }]}>
+          {user.profileImageUrl ? (
+            <Image source={{ uri: resolveMediaUrl(user.profileImageUrl) }} style={styles.photoImage} />
+          ) : (
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              Add photo
+            </Text>
+          )}
+        </View>
+      </Pressable>
+      {user.profileImageUrl && (
+        <Button compact onPress={removePhoto} disabled={uploadingPhoto}>
+          Remove photo
+        </Button>
+      )}
+
+      <Text variant="labelLarge" style={styles.fieldLabel}>
+        Business name
+      </Text>
+      <TextInput
+        value={businessName}
+        onChangeText={setBusinessName}
+        mode="outlined"
+        placeholder={user.fullName}
+      />
+
+      <Text variant="labelLarge" style={styles.fieldLabel}>
+        Service category
+      </Text>
+      <View style={styles.chipRow}>
+        {categories.map((category) => {
+          const selected = category.id === categoryId;
+          return (
+            <Chip
+              key={category.id}
+              selected={selected}
+              showSelectedCheck={false}
+              onPress={() => setCategoryId(category.id)}
+              style={{
+                backgroundColor: selected ? theme.colors.primary : theme.colors.surfaceVariant,
+                borderColor: selected ? theme.colors.primary : theme.colors.outline,
+              }}
+              textStyle={{ color: selected ? theme.colors.onPrimary : theme.colors.onSurface }}
+            >
+              {category.name}
+            </Chip>
+          );
+        })}
+      </View>
       <Button compact onPress={openSuggest}>
         Can&apos;t find your trade? Add a new category
       </Button>
+
+      <Text variant="labelLarge" style={styles.fieldLabel}>
+        Hourly rate
+      </Text>
+      <TextInput value={hourlyRate} onChangeText={setHourlyRate} mode="outlined" keyboardType="decimal-pad" />
+
       <TextInput label="Bio" value={bio} onChangeText={setBio} mode="outlined" multiline numberOfLines={3} />
-      <TextInput
-        label="Hourly rate ($)"
-        value={hourlyRate}
-        onChangeText={setHourlyRate}
-        mode="outlined"
-        keyboardType="decimal-pad"
-      />
       <TextInput
         label="Years of experience (optional)"
         value={yearsOfExperience}
@@ -198,31 +292,26 @@ export function CraftsmanProfileEditor() {
       />
       <TextInput label="Address (optional)" value={addressText} onChangeText={setAddressText} mode="outlined" />
 
-      <View style={styles.locationBlock}>
-        <Text variant="bodyMedium">Location</Text>
-        <Text variant="bodySmall">
+      <Text variant="labelLarge" style={styles.fieldLabel}>
+        Service area
+      </Text>
+      <View style={[styles.areaPlaceholder, { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.outline }]}>
+        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
           {latitude != null && longitude != null
-            ? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
-            : 'Not captured yet.'}
+            ? `Pinned at ${latitude.toFixed(3)}, ${longitude.toFixed(3)}`
+            : 'Location not pinned yet'}
         </Text>
-        <Button mode="outlined" onPress={captureLocation} loading={locating} disabled={locating}>
-          {latitude != null ? 'Refresh my location' : 'Use my current location'}
-        </Button>
-        {locationError && <HelperText type="error">{locationError}</HelperText>}
       </View>
-
-      {mode === 'edit' && (
-        <View style={styles.switchRow}>
-          <Text variant="bodyMedium">Available for bookings</Text>
-          <Switch value={isAvailable} onValueChange={setIsAvailable} />
-        </View>
-      )}
+      <Button mode="outlined" onPress={captureLocation} loading={locating} disabled={locating}>
+        {latitude != null ? 'Refresh my location' : 'Use my current location'}
+      </Button>
+      {locationError && <HelperText type="error">{locationError}</HelperText>}
 
       {error && <HelperText type="error">{error}</HelperText>}
       {success && <HelperText type="info">{success}</HelperText>}
 
-      <Button mode="contained" onPress={onSubmit} loading={submitting} disabled={submitting}>
-        {mode === 'create' ? 'Create Profile' : 'Save Changes'}
+      <Button mode="contained" style={styles.saveButton} onPress={onSubmit} loading={submitting} disabled={submitting}>
+        {mode === 'create' ? 'Save & publish' : 'Save Changes'}
       </Button>
 
       <Portal>
@@ -254,7 +343,7 @@ export function CraftsmanProfileEditor() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -263,13 +352,42 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  title: {
+    fontWeight: '800',
   },
-  locationBlock: {
-    gap: 4,
+  photoTile: {
+    width: 72,
+    height: 72,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  fieldLabel: {
+    marginTop: 4,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  areaPlaceholder: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    paddingVertical: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButton: {
+    marginTop: 8,
+    borderRadius: 28,
   },
   suggestContent: {
     gap: 12,

@@ -27,6 +27,7 @@ public class CraftsmanProfileService(
         {
             UserId = userId,
             ServiceCategoryId = request.ServiceCategoryId,
+            BusinessName = request.BusinessName,
             Bio = request.Bio,
             HourlyRate = request.HourlyRate,
             YearsOfExperience = request.YearsOfExperience,
@@ -70,6 +71,7 @@ public class CraftsmanProfileService(
             ?? throw new NotFoundException($"Craftsman profile for user '{userId}' was not found.");
 
         if (request.ServiceCategoryId is not null) profile.ServiceCategoryId = request.ServiceCategoryId.Value;
+        if (request.BusinessName is not null) profile.BusinessName = request.BusinessName;
         if (request.Bio is not null) profile.Bio = request.Bio;
         if (request.HourlyRate is not null) profile.HourlyRate = request.HourlyRate.Value;
         if (request.YearsOfExperience is not null) profile.YearsOfExperience = request.YearsOfExperience;
@@ -79,6 +81,20 @@ public class CraftsmanProfileService(
         {
             profile.Location = GeoHelper.CreatePoint(request.Latitude.Value, request.Longitude.Value);
         }
+        profile.UpdatedAt = DateTimeOffset.UtcNow;
+
+        craftsmanProfileRepository.Update(profile);
+        await craftsmanProfileRepository.SaveChangesAsync();
+
+        return await GetByIdAsync(userId);
+    }
+
+    public async Task<CraftsmanProfileResponse> VerifyAsync(Guid userId, bool isVerified)
+    {
+        var profile = await craftsmanProfileRepository.GetByUserIdAsync(userId)
+            ?? throw new NotFoundException($"Craftsman profile for user '{userId}' was not found.");
+
+        profile.IsVerified = isVerified;
         profile.UpdatedAt = DateTimeOffset.UtcNow;
 
         craftsmanProfileRepository.Update(profile);

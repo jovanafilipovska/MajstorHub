@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar, Button, Card, Icon, IconButton, Text, useTheme } from 'react-native-paper';
 import { getCraftsmanProfile, getCraftsmanReviews } from '../../api/craftsmen';
 import { addFavorite, listFavorites, removeFavorite } from '../../api/favorites';
-import { ApiError } from '../../api/client';
+import { ApiError, resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
@@ -96,16 +96,34 @@ export function CraftsmanDetailScreen({ route, navigation }: Props) {
         </View>
 
         <View style={styles.headerBlock}>
-          <Avatar.Text
-            size={88}
-            label={initialsOf(profile.fullName)}
-            style={[styles.avatar, { backgroundColor: theme.colors.primary, borderColor: theme.colors.background }]}
-            labelStyle={{ color: theme.colors.onPrimary }}
-          />
+          {profile.profileImageUrl ? (
+            <Avatar.Image
+              size={88}
+              source={{ uri: resolveMediaUrl(profile.profileImageUrl) }}
+              style={[styles.avatar, { borderColor: theme.colors.background }]}
+            />
+          ) : (
+            <Avatar.Text
+              size={88}
+              label={initialsOf(profile.fullName)}
+              style={[styles.avatar, { backgroundColor: theme.colors.primary, borderColor: theme.colors.background }]}
+              labelStyle={{ color: theme.colors.onPrimary }}
+            />
+          )}
 
-          <Text variant="headlineSmall" style={styles.name}>
-            {profile.fullName}
-          </Text>
+          <View style={styles.nameRow}>
+            <Text variant="headlineSmall" style={styles.name}>
+              {profile.businessName || profile.fullName}
+            </Text>
+            {profile.isVerified && (
+              <View style={[styles.verifiedBadge, { backgroundColor: theme.colors.primaryContainer }]}>
+                <Icon source="check-decagram" size={14} color={theme.colors.onPrimaryContainer} />
+                <Text variant="labelSmall" style={{ color: theme.colors.onPrimaryContainer }}>
+                  Verified
+                </Text>
+              </View>
+            )}
+          </View>
           {locationLabel.length > 0 && (
             <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
               {locationLabel}
@@ -254,8 +272,22 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     marginBottom: 8,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   name: {
     fontWeight: '700',
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   ratingRow: {
     flexDirection: 'row',

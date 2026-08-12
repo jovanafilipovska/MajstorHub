@@ -1,5 +1,6 @@
 using MajstorHub.Api.DTOs.Bookings;
 using MajstorHub.Api.Models.Enums;
+using Microsoft.AspNetCore.Http;
 
 namespace MajstorHub.Api.Services.Interfaces;
 
@@ -11,4 +12,5 @@ public interface IBookingService
     Task<List<BookingResponse>> GetForCraftsmanAsync(Guid craftsmanUserId);
     Task<List<BookingResponse>> GetForUserAsync(Guid userId);
     Task<BookingResponse> UpdateStatusAsync(Guid bookingId, Guid requestingUserId, BookingStatus newStatus);
+    Task<BookingResponse> UploadPhotosAsync(Guid bookingId, Guid requestingUserId, List<IFormFile> files);
 }

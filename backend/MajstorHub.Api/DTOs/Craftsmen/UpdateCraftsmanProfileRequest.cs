@@ -6,6 +6,9 @@ public class UpdateCraftsmanProfileRequest
 {
     public int? ServiceCategoryId { get; set; }
 
+    [MaxLength(150)]
+    public string? BusinessName { get; set; }
+
     [MaxLength(1000)]
     public string? Bio { get; set; }
 

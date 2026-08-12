@@ -4,16 +4,17 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
-import { Avatar, Chip, Icon, Menu, Searchbar, Text, useTheme } from 'react-native-paper';
+import { Avatar, Chip, Menu, Searchbar, Text, useTheme } from 'react-native-paper';
 import { listServiceCategories } from '../../api/serviceCategories';
 import { listAllCraftsmen, listCraftsmenByCategory } from '../../api/craftsmen';
-import { ApiError } from '../../api/client';
+import { ApiError, resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { Language } from '../../contexts/LanguageContext';
 import { distanceKm } from '../../utils/geo';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
+import { CraftsmanCard } from '../../components/CraftsmanCard';
 import type { BrowseStackParamList } from '../../navigation/types';
 import type { CraftsmanProfileResponse, ServiceCategoryResponse } from '../../types/api';
 
@@ -40,14 +41,6 @@ function initialsOf(fullName: string): string {
   return initials.join('') || '?';
 }
 
-function CraftsmanImagePlaceholder({ tint, icon }: { tint: string; icon: string }) {
-  return (
-    <View style={[styles.cardImage, { backgroundColor: tint }]}>
-      <Icon source={icon} size={40} color="#00000033" />
-    </View>
-  );
-}
-
 function formatDistance(km: number): string {
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
 }
@@ -58,41 +51,6 @@ function chunkPairs<T>(items: T[]): T[][] {
     rows.push(items.slice(i, i + 2));
   }
   return rows;
-}
-
-function CraftsmanCard({
-  item,
-  width,
-  distanceLabel,
-  onPress,
-}: {
-  item: CraftsmanProfileResponse;
-  width: number;
-  distanceLabel?: string | null;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-  return (
-    <Pressable onPress={onPress} style={[styles.gridCard, { width, backgroundColor: theme.colors.surface }]}>
-      <CraftsmanImagePlaceholder tint={theme.colors.surfaceVariant} icon="account-hard-hat" />
-      <Text variant="titleSmall" numberOfLines={1} style={styles.cardName}>
-        {item.fullName}
-      </Text>
-      <Text variant="bodySmall" style={{ color: theme.colors.primary }} numberOfLines={1}>
-        {item.serviceCategoryName}
-        {item.addressText ? ` · ${item.addressText}` : ''}
-      </Text>
-      {distanceLabel && (
-        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
-         {distanceLabel} away
-        </Text>
-      )}
-      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
-        {item.averageRating ? `★ ${item.averageRating.toFixed(1)} (${item.reviewCount})` : 'No ratings yet'} ·{' '}
-        {item.hourlyRate.toFixed(0)} $/hr
-      </Text>
-    </Pressable>
-  );
 }
 
 const GRID_PADDING = 16;
@@ -119,6 +77,15 @@ export function HomeScreen({ navigation }: Props) {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') return;
+
+        // A fresh GPS fix can take several seconds (worse indoors / cold start).
+        // Show the last cached fix immediately so "Near Me" isn't stuck loading,
+        // then quietly refine it once the current fix comes back.
+        const lastKnown = await Location.getLastKnownPositionAsync();
+        if (lastKnown) {
+          setCoords({ latitude: lastKnown.coords.latitude, longitude: lastKnown.coords.longitude });
+        }
+
         const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         setCoords({ latitude: position.coords.latitude, longitude: position.coords.longitude });
       } catch (err) {
@@ -232,12 +199,16 @@ export function HomeScreen({ navigation }: Props) {
               ))}
             </Menu>
             <Pressable onPress={() => navigation.getParent()?.navigate('ProfileTab' as never)}>
-              <Avatar.Text
-                size={40}
-                label={initialsOf(user?.fullName ?? '?')}
-                style={{ backgroundColor: theme.colors.primary }}
-                labelStyle={{ color: theme.colors.onPrimary }}
-              />
+              {user?.profileImageUrl ? (
+                <Avatar.Image size={40} source={{ uri: resolveMediaUrl(user.profileImageUrl) }} />
+              ) : (
+                <Avatar.Text
+                  size={40}
+                  label={initialsOf(user?.fullName ?? '?')}
+                  style={{ backgroundColor: theme.colors.primary }}
+                  labelStyle={{ color: theme.colors.onPrimary }}
+                />
+              )}
             </Pressable>
           </View>
         </View>
@@ -385,23 +356,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     gap: 12,
-  },
-  gridCard: {
-    borderRadius: 16,
-    padding: 10,
-    gap: 6,
-    marginBottom: 12,
-  },
-  cardImage: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  cardName: {
-    marginTop: 2,
   },
   empty: {
     textAlign: 'center',

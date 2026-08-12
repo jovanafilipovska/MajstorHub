@@ -2,9 +2,9 @@ import { useCallback, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Card, Chip, Text } from 'react-native-paper';
+import { Avatar, Card, Chip, Icon, Text, useTheme } from 'react-native-paper';
 import { listCraftsmenByCategory } from '../../api/craftsmen';
-import { ApiError } from '../../api/client';
+import { ApiError, resolveMediaUrl } from '../../api/client';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import type { BrowseStackParamList } from '../../navigation/types';
@@ -12,7 +12,17 @@ import type { CraftsmanProfileResponse } from '../../types/api';
 
 type Props = NativeStackScreenProps<BrowseStackParamList, 'CraftsmenList'>;
 
+function initialsOf(fullName: string): string {
+  const initials = fullName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '');
+  return initials.join('') || '?';
+}
+
 export function CraftsmenListScreen({ route, navigation }: Props) {
+  const theme = useTheme();
   const { categoryId, categoryName } = route.params;
   const [craftsmen, setCraftsmen] = useState<CraftsmanProfileResponse[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,11 +54,28 @@ export function CraftsmenListScreen({ route, navigation }: Props) {
             navigation.navigate('CraftsmanDetail', { craftsmanUserId: item.userId, craftsmanName: item.fullName })
           }
         >
+          {item.isVerified && (
+            <View style={[styles.verifiedCorner, { backgroundColor: theme.colors.surface }]}>
+              <Icon source="check-decagram" size={18} color={theme.colors.primary} />
+            </View>
+          )}
           <Card.Title
             title={item.fullName}
             subtitle={`$${item.hourlyRate.toFixed(2)}/hr${
               item.averageRating ? ` · ${item.averageRating.toFixed(1)}★ (${item.reviewCount})` : ' · No ratings yet'
             }`}
+            left={(props) =>
+              item.profileImageUrl ? (
+                <Avatar.Image size={props.size} source={{ uri: resolveMediaUrl(item.profileImageUrl) }} />
+              ) : (
+                <Avatar.Text
+                  size={props.size}
+                  label={initialsOf(item.fullName)}
+                  style={{ backgroundColor: theme.colors.primary }}
+                  labelStyle={{ color: theme.colors.onPrimary }}
+                />
+              )
+            }
           />
           <Card.Content>
             <View style={styles.chipRow}>
@@ -68,6 +95,14 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 12,
+  },
+  verifiedCorner: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    borderRadius: 12,
+    padding: 3,
+    zIndex: 1,
   },
   chipRow: {
     flexDirection: 'row',

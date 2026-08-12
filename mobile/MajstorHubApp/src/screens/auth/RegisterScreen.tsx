@@ -10,16 +10,19 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
 export function RegisterScreen({ navigation }: Props) {
   const { register } = useAuth();
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [role, setRole] = useState<'Client' | 'Craftsman'>('Client');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const validationError = (): string | null => {
-    if (fullName.trim().length === 0) return 'Full name is required.';
+    if (firstName.trim().length === 0) return 'First name is required.';
+    if (lastName.trim().length === 0) return 'Last name is required.';
     if (!email.includes('@')) return 'Enter a valid email address.';
     if (password.length < 8) return 'Password must be at least 8 characters.';
     return null;
@@ -35,7 +38,8 @@ export function RegisterScreen({ navigation }: Props) {
     setSubmitting(true);
     try {
       await register({
-        fullName: fullName.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         email: email.trim(),
         password,
         phoneNumber: phoneNumber.trim() || undefined,
@@ -55,7 +59,8 @@ export function RegisterScreen({ navigation }: Props) {
       </Text>
 
       <View style={styles.form}>
-        <TextInput label="Full name" value={fullName} onChangeText={setFullName} mode="outlined" />
+        <TextInput label="First name" value={firstName} onChangeText={setFirstName} mode="outlined" />
+        <TextInput label="Last name" value={lastName} onChangeText={setLastName} mode="outlined" />
         <TextInput
           label="Email"
           value={email}
@@ -64,7 +69,19 @@ export function RegisterScreen({ navigation }: Props) {
           keyboardType="email-address"
           mode="outlined"
         />
-        <TextInput label="Password" value={password} onChangeText={setPassword} secureTextEntry mode="outlined" />
+        <TextInput
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!passwordVisible}
+          right={
+            <TextInput.Icon
+              icon={passwordVisible ? 'eye-off' : 'eye'}
+              onPress={() => setPasswordVisible((visible) => !visible)}
+            />
+          }
+          mode="outlined"
+        />
         <TextInput
           label="Phone number (optional)"
           value={phoneNumber}

@@ -27,7 +27,8 @@ public static class DbSeeder
         var admin = new User
         {
             Id = Guid.NewGuid(),
-            FullName = "Administrator",
+            FirstName = "Administrator",
+            LastName = string.Empty,
             Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
             Role = UserRole.Admin,

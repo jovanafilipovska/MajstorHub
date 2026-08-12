@@ -25,9 +25,22 @@ public class UserService(IUserRepository userRepository, IWebHostEnvironment web
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new NotFoundException($"User '{userId}' was not found.");
 
-        if (request.FullName is not null) user.FullName = request.FullName;
+        if (request.Email is not null && !request.Email.Equals(user.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            if (await userRepository.ExistsByEmailAsync(request.Email))
+            {
+                throw new ConflictException($"A user with email '{request.Email}' already exists.");
+            }
+            user.Email = request.Email;
+        }
+
+        if (request.FirstName is not null) user.FirstName = request.FirstName;
+        if (request.LastName is not null) user.LastName = request.LastName;
         if (request.PhoneNumber is not null) user.PhoneNumber = request.PhoneNumber;
-        if (request.AddressText is not null) user.AddressText = request.AddressText;
+        if (request.Street is not null) user.Street = request.Street;
+        if (request.HouseNumber is not null) user.HouseNumber = request.HouseNumber;
+        if (request.City is not null) user.City = request.City;
+        if (request.Country is not null) user.Country = request.Country;
 
         userRepository.Update(user);
         await userRepository.SaveChangesAsync();
@@ -42,7 +55,12 @@ public class UserService(IUserRepository userRepository, IWebHostEnvironment web
 
         if (!BC.Verify(request.CurrentPassword, user.PasswordHash))
         {
-            throw new UnauthorizedException("Current password is incorrect.");
+            throw new ValidationException("Current password is incorrect.");
+        }
+
+        if (BC.Verify(request.NewPassword, user.PasswordHash))
+        {
+            throw new ValidationException("New password must be different from the current password.");
         }
 
         user.PasswordHash = BC.HashPassword(request.NewPassword);

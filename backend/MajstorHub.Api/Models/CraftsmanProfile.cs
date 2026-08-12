@@ -6,12 +6,14 @@ public class CraftsmanProfile
 {
     public Guid UserId { get; set; }
     public int ServiceCategoryId { get; set; }
+    public string? BusinessName { get; set; }
     public string? Bio { get; set; }
     public decimal HourlyRate { get; set; }
     public int? YearsOfExperience { get; set; }
     public Point? Location { get; set; }
     public string? AddressText { get; set; }
     public bool IsAvailable { get; set; } = true;
+    public bool IsVerified { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 

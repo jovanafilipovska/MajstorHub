@@ -9,5 +9,6 @@ public interface ICraftsmanProfileService
     Task<List<CraftsmanProfileResponse>> GetAllAsync();
     Task<List<CraftsmanProfileResponse>> GetByCategoryAsync(int categoryId);
     Task<CraftsmanProfileResponse> UpdateAsync(Guid userId, UpdateCraftsmanProfileRequest request);
+    Task<CraftsmanProfileResponse> VerifyAsync(Guid userId, bool isVerified);
     Task<List<CraftsmanProfileResponse>> SearchNearbyAsync(double latitude, double longitude, double radiusKm);
 }

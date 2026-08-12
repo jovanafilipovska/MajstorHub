@@ -2,6 +2,7 @@ using MajstorHub.Api.DTOs.Bookings;
 using MajstorHub.Api.Extensions;
 using MajstorHub.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MajstorHub.Api.Controllers;
@@ -37,6 +38,14 @@ public class BookingsController(IBookingService bookingService) : ControllerBase
     public async Task<ActionResult<BookingResponse>> UpdateStatus(Guid id, UpdateBookingStatusRequest request)
     {
         var response = await bookingService.UpdateStatusAsync(id, User.GetUserId(), request.Status);
+        return Ok(response);
+    }
+
+    [HttpPost("{id:guid}/photos")]
+    [RequestSizeLimit(20_000_000)]
+    public async Task<ActionResult<BookingResponse>> UploadPhotos(Guid id, List<IFormFile> files)
+    {
+        var response = await bookingService.UploadPhotosAsync(id, User.GetUserId(), files);
         return Ok(response);
     }
 }

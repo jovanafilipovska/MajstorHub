@@ -1,14 +1,16 @@
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Button, Dialog, HelperText, Portal, Text } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Avatar, Button, Dialog, HelperText, Icon, Portal, Text, useTheme } from 'react-native-paper';
 import { getBooking, updateBookingStatus } from '../../api/bookings';
-import { ApiError } from '../../api/client';
+import { ApiError, resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { StatusBadge } from '../../components/StatusBadge';
+import { openDirections } from '../../utils/directions';
 import type { BookingsStackParamList } from '../../navigation/types';
 import type { BookingResponse, BookingStatus } from '../../types/api';
 
@@ -25,30 +27,67 @@ function getAvailableActions(
   status: BookingStatus,
   isCraftsmanOnBooking: boolean,
   isClientOnBooking: boolean,
-): { label: string; nextStatus: BookingStatus }[] {
+): { label: string; nextStatus: BookingStatus; primary: boolean }[] {
   if (status === 'Pending' && isCraftsmanOnBooking) {
     return [
-      { label: 'Accept', nextStatus: 'Accepted' },
-      { label: 'Reject', nextStatus: 'Rejected' },
+      { label: 'Reject', nextStatus: 'Rejected', primary: false },
+      { label: 'Accept', nextStatus: 'Accepted', primary: true },
     ];
   }
   if (status === 'Accepted' && isCraftsmanOnBooking) {
     return [
-      { label: 'Complete', nextStatus: 'Completed' },
-      { label: 'Cancel', nextStatus: 'Cancelled' },
+      { label: 'Cancel', nextStatus: 'Cancelled', primary: false },
+      { label: 'Complete', nextStatus: 'Completed', primary: true },
     ];
   }
   if (status === 'Accepted' && isClientOnBooking) {
-    return [{ label: 'Cancel', nextStatus: 'Cancelled' }];
+    return [{ label: 'Cancel Booking', nextStatus: 'Cancelled', primary: false }];
   }
   return [];
 }
 
 const CONFIRM_STATUSES: BookingStatus[] = ['Rejected', 'Cancelled'];
 
+function initialsOf(fullName: string): string {
+  const initials = fullName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '');
+  return initials.join('') || '?';
+}
+
+function formatDateTime(iso: string): string {
+  const date = new Date(iso);
+  return `${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} · ${date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+}
+
+function shortBookingId(id: string): string {
+  return `#MH-${id.replace(/-/g, '').slice(0, 6).toUpperCase()}`;
+}
+
+function DetailRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.detailRow, { backgroundColor: theme.colors.surfaceVariant }]}>
+      <View style={styles.detailLabel}>
+        <Icon source={icon} size={18} color={theme.colors.onSurfaceVariant} />
+        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+          {label}
+        </Text>
+      </View>
+      <Text variant="bodyMedium" style={styles.detailValue}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
 export function BookingDetailScreen({ route, navigation }: Props) {
   const { bookingId } = route.params;
   const { user, token } = useAuth();
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const [booking, setBooking] = useState<BookingResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -92,59 +131,135 @@ export function BookingDetailScreen({ route, navigation }: Props) {
   const isClientOnBooking = booking.clientId === user?.id;
   const actions = getAvailableActions(booking.status, isCraftsmanOnBooking, isClientOnBooking);
   const canReview = isClientOnBooking && booking.status === 'Completed';
+  const otherPartyName = isClientOnBooking ? booking.craftsmanName : booking.clientName;
+  const otherPartyImageUrl = isClientOnBooking ? booking.craftsmanProfileImageUrl : booking.clientProfileImageUrl;
+  const hasFooterActions = actions.length > 0 || canReview;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text variant="headlineSmall">{booking.serviceCategoryName}</Text>
-      <StatusBadge status={booking.status} />
+    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <StatusBadge status={booking.status} />
 
-      <Text variant="bodyMedium" style={styles.field}>
-        Client: {booking.clientName}
-      </Text>
-      <Text variant="bodyMedium">Craftsman: {booking.craftsmanName}</Text>
-      <Text variant="bodyMedium" style={styles.field}>
-        {booking.description}
-      </Text>
-      <Text variant="bodyMedium">Address: {booking.address}</Text>
-      {booking.scheduledAt && (
-        <Text variant="bodyMedium">Scheduled: {new Date(booking.scheduledAt).toLocaleString()}</Text>
-      )}
-      {booking.priceQuote != null && <Text variant="bodyMedium">Quote: ${booking.priceQuote.toFixed(2)}</Text>}
+        <View style={[styles.partyCard, { backgroundColor: theme.colors.surfaceVariant }]}>
+          {otherPartyImageUrl ? (
+            <Avatar.Image size={48} source={{ uri: resolveMediaUrl(otherPartyImageUrl) }} />
+          ) : (
+            <Avatar.Text
+              size={48}
+              label={initialsOf(otherPartyName)}
+              style={{ backgroundColor: theme.colors.primary }}
+              labelStyle={{ color: theme.colors.onPrimary }}
+            />
+          )}
+          <View style={styles.partyText}>
+            <Text variant="titleMedium">{otherPartyName}</Text>
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+              {booking.serviceCategoryName}
+            </Text>
+          </View>
+        </View>
 
-      {actionError && <HelperText type="error">{actionError}</HelperText>}
+        <Text variant="titleMedium" style={styles.sectionTitle}>
+          Schedule
+        </Text>
+        <View style={styles.rowGroup}>
+          {booking.scheduledAt && (
+            <DetailRow icon="calendar-blank-outline" label="Date & time" value={formatDateTime(booking.scheduledAt)} />
+          )}
+          <DetailRow icon="map-marker-outline" label="Address" value={booking.address} />
+          <DetailRow icon="pound" label="Booking ID" value={shortBookingId(booking.id)} />
+        </View>
 
-      {actions.map((action) => (
-        <Button
-          key={action.nextStatus}
-          mode={action.nextStatus === 'Rejected' || action.nextStatus === 'Cancelled' ? 'outlined' : 'contained'}
-          style={styles.actionButton}
-          loading={submitting}
-          disabled={submitting}
-          onPress={() => {
-            if (CONFIRM_STATUSES.includes(action.nextStatus)) {
-              setPendingAction(action);
-            } else {
-              applyStatus(action.nextStatus);
-            }
-          }}
+        {isCraftsmanOnBooking && booking.latitude != null && booking.longitude != null && (
+          <Button
+            mode="outlined"
+            icon="directions"
+            onPress={() => openDirections(booking.latitude, booking.longitude, booking.address)}
+          >
+            Get Directions
+          </Button>
+        )}
+
+        <Text variant="titleMedium" style={styles.sectionTitle}>
+          Job
+        </Text>
+        <View style={[styles.jobCard, { backgroundColor: theme.colors.surfaceVariant }]}>
+          <Text variant="bodyMedium">{booking.description}</Text>
+        </View>
+
+        {booking.photoUrls.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoRow}>
+            {booking.photoUrls.map((url) => (
+              <Image key={url} source={{ uri: resolveMediaUrl(url) }} style={styles.photoThumb} />
+            ))}
+          </ScrollView>
+        )}
+
+        {booking.priceQuote != null && (
+          <View style={[styles.priceCard, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Text variant="titleMedium" style={{ color: theme.colors.onPrimaryContainer }}>
+              Total
+            </Text>
+            <Text variant="titleLarge" style={{ color: theme.colors.onPrimaryContainer, fontWeight: '700' }}>
+              ${booking.priceQuote.toFixed(2)}
+            </Text>
+          </View>
+        )}
+
+        {actionError && <HelperText type="error">{actionError}</HelperText>}
+
+        {hasFooterActions && <View style={styles.footerSpacer} />}
+      </ScrollView>
+
+      {hasFooterActions && (
+        <View
+          style={[
+            styles.footer,
+            {
+              backgroundColor: theme.colors.background,
+              borderTopColor: theme.colors.outlineVariant,
+              paddingBottom: insets.bottom + 12,
+            },
+          ]}
         >
-          {action.label}
-        </Button>
-      ))}
+          {actions.map((action) => (
+            <Button
+              key={action.nextStatus}
+              mode={action.primary ? 'contained' : 'outlined'}
+              style={styles.footerButton}
+              contentStyle={styles.footerButtonContent}
+              loading={submitting}
+              disabled={submitting}
+              onPress={() => {
+                if (CONFIRM_STATUSES.includes(action.nextStatus)) {
+                  setPendingAction(action);
+                } else {
+                  applyStatus(action.nextStatus);
+                }
+              }}
+            >
+              {action.label}
+            </Button>
+          ))}
 
-      {canReview && (
-        <Button
-          mode="contained"
-          style={styles.actionButton}
-          onPress={() => navigation.navigate('LeaveReview', { bookingId: booking.id, craftsmanName: booking.craftsmanName })}
-        >
-          Leave a Review
-        </Button>
+          {canReview && (
+            <Button
+              mode="contained"
+              style={styles.footerButton}
+              contentStyle={styles.footerButtonContent}
+              onPress={() =>
+                navigation.navigate('LeaveReview', { bookingId: booking.id, craftsmanName: booking.craftsmanName })
+              }
+            >
+              Leave a Review
+            </Button>
+          )}
+        </View>
       )}
 
       <Portal>
         <Dialog visible={pendingAction !== null} onDismiss={() => setPendingAction(null)}>
-          <Dialog.Title>{pendingAction?.label} booking?</Dialog.Title>
+          <Dialog.Title>{pendingAction?.label}?</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">This action cannot be undone.</Text>
           </Dialog.Content>
@@ -154,19 +269,92 @@ export function BookingDetailScreen({ route, navigation }: Props) {
           </Dialog.Actions>
         </Dialog>
       </Portal>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   container: {
     padding: 16,
-    gap: 6,
+    gap: 12,
   },
-  field: {
+  partyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 16,
+    padding: 16,
+  },
+  partyText: {
+    flex: 1,
+    gap: 2,
+  },
+  sectionTitle: {
+    fontWeight: '700',
     marginTop: 8,
   },
-  actionButton: {
-    marginTop: 12,
+  rowGroup: {
+    gap: 8,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  detailLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  detailValue: {
+    fontWeight: '700',
+  },
+  jobCard: {
+    borderRadius: 12,
+    padding: 16,
+  },
+  photoRow: {
+    marginTop: -4,
+  },
+  photoThumb: {
+    width: 88,
+    height: 88,
+    borderRadius: 12,
+    marginRight: 10,
+  },
+  priceCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  footerSpacer: {
+    height: 88,
+  },
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  footerButton: {
+    flex: 1,
+    borderRadius: 28,
+  },
+  footerButtonContent: {
+    paddingVertical: 6,
   },
 });

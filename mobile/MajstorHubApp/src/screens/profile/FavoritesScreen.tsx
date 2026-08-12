@@ -1,21 +1,27 @@
 import { useCallback, useState } from 'react';
-import { FlatList, StyleSheet } from 'react-native';
+import { FlatList, StyleSheet, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Card, IconButton, Text, useTheme } from 'react-native-paper';
+import { IconButton, Text, useTheme } from 'react-native-paper';
 import { listFavorites, removeFavorite } from '../../api/favorites';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
+import { CraftsmanCard } from '../../components/CraftsmanCard';
 import type { ProfileStackParamList } from '../../navigation/types';
 import type { CraftsmanProfileResponse } from '../../types/api';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Favorites'>;
 
+const GRID_PADDING = 16;
+const GRID_GAP = 12;
+
 export function FavoritesScreen({ navigation }: Props) {
   const { token } = useAuth();
   const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const cardWidth = (width - GRID_PADDING * 2 - GRID_GAP) / 2;
   const [favorites, setFavorites] = useState<CraftsmanProfileResponse[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -64,25 +70,27 @@ export function FavoritesScreen({ navigation }: Props) {
   return (
     <FlatList
       contentContainerStyle={styles.list}
+      columnWrapperStyle={styles.row}
+      numColumns={2}
       data={favorites}
       keyExtractor={(item) => item.userId}
       ListEmptyComponent={<Text style={styles.empty}>No favorite pros yet.</Text>}
       renderItem={({ item }) => (
-        <Card style={styles.card} onPress={() => goToDetail(item)}>
-          <Card.Title
-            title={item.fullName}
-            subtitle={`${item.serviceCategoryName}${item.addressText ? ` · ${item.addressText}` : ''}`}
-            right={(props) => (
-              <IconButton
-                {...props}
-                icon="heart"
-                iconColor={theme.colors.error}
-                disabled={removingId === item.userId}
-                onPress={() => unfavorite(item.userId)}
-              />
-            )}
-          />
-        </Card>
+        <CraftsmanCard
+          item={item}
+          width={cardWidth}
+          onPress={() => goToDetail(item)}
+          cornerAction={
+            <IconButton
+              icon="heart"
+              size={18}
+              iconColor={theme.colors.error}
+              containerColor={theme.colors.surface}
+              disabled={removingId === item.userId}
+              onPress={() => unfavorite(item.userId)}
+            />
+          }
+        />
       )}
     />
   );
@@ -90,11 +98,11 @@ export function FavoritesScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   list: {
-    padding: 16,
-    gap: 12,
+    padding: GRID_PADDING,
+    gap: GRID_GAP,
   },
-  card: {
-    marginBottom: 12,
+  row: {
+    gap: GRID_GAP,
   },
   empty: {
     textAlign: 'center',

@@ -12,7 +12,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useWorkMode } from '../../contexts/WorkModeContext';
 import { LoadingView } from '../../components/LoadingView';
 import { RoleSwitcher } from '../../components/RoleSwitcher';
-import { CraftsmanProfileEditor } from './CraftsmanProfileEditor';
+import { CraftsmanHome } from './CraftsmanHome';
 import type { ProfileStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Profile'>;
@@ -192,7 +192,7 @@ export function ProfileScreen({ navigation }: Props) {
           </Card>
         </>
       ) : (
-        <CraftsmanProfileEditor />
+        <CraftsmanHome navigation={navigation} />
       )}
 
       <Text variant="labelLarge" style={styles.groupLabel}>

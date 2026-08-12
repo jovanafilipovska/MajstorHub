@@ -34,10 +34,14 @@ public class MajstorHubDbContext : DbContext
     {
         modelBuilder.Entity<User>(entity =>
         {
-            entity.Property(u => u.FullName).HasMaxLength(150).IsRequired();
+            entity.Property(u => u.FirstName).HasMaxLength(100).IsRequired();
+            entity.Property(u => u.LastName).HasMaxLength(100).IsRequired();
             entity.Property(u => u.Email).HasMaxLength(256).IsRequired();
             entity.Property(u => u.PhoneNumber).HasMaxLength(30);
-            entity.Property(u => u.AddressText).HasMaxLength(300);
+            entity.Property(u => u.Street).HasMaxLength(150);
+            entity.Property(u => u.HouseNumber).HasMaxLength(20);
+            entity.Property(u => u.City).HasMaxLength(100);
+            entity.Property(u => u.Country).HasMaxLength(100);
             entity.Property(u => u.ProfileImageUrl).HasMaxLength(500);
             entity.Property(u => u.Role).HasConversion<string>().HasMaxLength(20);
             entity.HasIndex(u => u.Email).IsUnique();
@@ -49,6 +53,7 @@ public class MajstorHubDbContext : DbContext
         modelBuilder.Entity<CraftsmanProfile>(entity =>
         {
             entity.HasKey(c => c.UserId);
+            entity.Property(c => c.BusinessName).HasMaxLength(150);
             entity.Property(c => c.Bio).HasMaxLength(1000);
             entity.Property(c => c.HourlyRate).HasColumnType("decimal(10,2)");
             entity.Property(c => c.AddressText).HasMaxLength(300);
@@ -96,6 +101,7 @@ public class MajstorHubDbContext : DbContext
         {
             entity.Property(b => b.Description).HasMaxLength(1000).IsRequired();
             entity.Property(b => b.Address).HasMaxLength(300).IsRequired();
+            entity.Property(b => b.PhotoUrls).HasDefaultValueSql("'{}'");
             entity.Property(b => b.PriceQuote).HasColumnType("decimal(10,2)");
             entity.Property(b => b.Status).HasConversion<string>().HasMaxLength(20);
 
