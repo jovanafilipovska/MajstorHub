@@ -138,7 +138,8 @@ export function BookingDetailScreen({ route, navigation }: Props) {
   const showReviewedNotice = isClientOnBooking && booking.status === 'Completed' && booking.hasReview;
   const otherPartyName = isClientOnBooking ? booking.craftsmanName : booking.clientName;
   const otherPartyImageUrl = isClientOnBooking ? booking.craftsmanProfileImageUrl : booking.clientProfileImageUrl;
-  const hasFooterActions = actions.length > 0 || canReview;
+  // A Message button is always shown to either participant, so the footer is never empty.
+  const hasFooterActions = true;
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
@@ -240,6 +241,16 @@ export function BookingDetailScreen({ route, navigation }: Props) {
             },
           ]}
         >
+          <Button
+            mode="outlined"
+            icon="message-text-outline"
+            style={styles.footerButton}
+            contentStyle={styles.footerButtonContent}
+            onPress={() => navigation.navigate('Chat', { bookingId: booking.id, otherPartyName })}
+          >
+            {t.bookingDetail.messageButton}
+          </Button>
+
           {actions.map((action) => (
             <Button
               key={action.nextStatus}

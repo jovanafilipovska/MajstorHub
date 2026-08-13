@@ -1,5 +1,5 @@
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
-const API_ORIGIN = API_URL?.replace(/\/api\/?$/, '');
+export const API_ORIGIN = API_URL?.replace(/\/api\/?$/, '');
 
 // Server responses reference uploaded files (e.g. profile photos) by a
 // path relative to the API origin, not the `/api` route prefix.

@@ -16,6 +16,7 @@ export type BookingsStackParamList = {
   MyBookings: undefined;
   BookingDetail: { bookingId: string };
   LeaveReview: { bookingId: string; craftsmanName: string };
+  Chat: { bookingId: string; otherPartyName: string };
 };
 
 export type ProfileStackParamList = {
@@ -25,11 +26,17 @@ export type ProfileStackParamList = {
   MyBookings: undefined;
   BookingDetail: { bookingId: string };
   LeaveReview: { bookingId: string; craftsmanName: string };
+  Chat: { bookingId: string; otherPartyName: string };
 };
 
 export type DashboardStackParamList = {
   Dashboard: undefined;
   MyReviews: undefined;
+};
+
+export type MessagesStackParamList = {
+  Conversations: undefined;
+  Chat: { bookingId: string; otherPartyName: string };
 };
 
 export type SettingsStackParamList = {
@@ -40,6 +47,7 @@ export type MainTabParamList = {
   DashboardTab: NavigatorScreenParams<DashboardStackParamList>;
   BrowseTab: NavigatorScreenParams<BrowseStackParamList>;
   BookingsTab: NavigatorScreenParams<BookingsStackParamList>;
+  MessagesTab: NavigatorScreenParams<MessagesStackParamList>;
   ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
   SettingsTab: NavigatorScreenParams<SettingsStackParamList>;
 };

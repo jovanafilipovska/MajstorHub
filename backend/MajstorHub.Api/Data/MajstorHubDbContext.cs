@@ -15,6 +15,7 @@ public class MajstorHubDbContext : DbContext
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
+    public DbSet<Message> Messages => Set<Message>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -28,6 +29,7 @@ public class MajstorHubDbContext : DbContext
         ConfigureBooking(modelBuilder);
         ConfigureReview(modelBuilder);
         ConfigureFavorite(modelBuilder);
+        ConfigureMessage(modelBuilder);
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
@@ -161,6 +163,25 @@ public class MajstorHubDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(f => f.CraftsmanProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureMessage(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Message>(entity =>
+        {
+            entity.Property(m => m.Body).HasMaxLength(2000).IsRequired();
+            entity.HasIndex(m => new { m.BookingId, m.CreatedAt });
+
+            entity.HasOne(m => m.Booking)
+                .WithMany()
+                .HasForeignKey(m => m.BookingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(m => m.Sender)
+                .WithMany()
+                .HasForeignKey(m => m.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

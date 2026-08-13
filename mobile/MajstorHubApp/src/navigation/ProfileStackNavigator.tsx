@@ -5,6 +5,7 @@ import { FavoritesScreen } from '../screens/profile/FavoritesScreen';
 import { MyBookingsScreen } from '../screens/bookings/MyBookingsScreen';
 import { BookingDetailScreen } from '../screens/bookings/BookingDetailScreen';
 import { LeaveReviewScreen } from '../screens/bookings/LeaveReviewScreen';
+import { ChatScreen } from '../screens/messages/ChatScreen';
 import { useTranslation } from '../i18n';
 import type { ProfileStackParamList } from './types';
 
@@ -20,6 +21,11 @@ export function ProfileStackNavigator() {
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: t.nav.bookingHistoryTitle }} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} options={{ title: t.nav.bookingTitle }} />
       <Stack.Screen name="LeaveReview" component={LeaveReviewScreen} options={{ title: t.nav.leaveReviewTitle }} />
+      <Stack.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={({ route }) => ({ title: route.params.otherPartyName })}
+      />
     </Stack.Navigator>
   );
 }

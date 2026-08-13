@@ -11,6 +11,7 @@ import {
   Nunito_900Black,
 } from '@expo-google-fonts/nunito';
 import { AuthProvider } from './src/contexts/AuthContext';
+import { ChatProvider } from './src/contexts/ChatContext';
 import { WorkModeProvider } from './src/contexts/WorkModeContext';
 import { ThemeProvider, useThemeMode } from './src/contexts/ThemeContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
@@ -41,11 +42,13 @@ function AppShell() {
   return (
     <PaperProvider theme={activeTheme}>
       <AuthProvider>
-        <WorkModeProvider>
-          <NavigationContainer ref={navigationRef} theme={mode === 'dark' ? navDarkTheme : navLightTheme}>
-            <RootNavigator />
-          </NavigationContainer>
-        </WorkModeProvider>
+        <ChatProvider>
+          <WorkModeProvider>
+            <NavigationContainer ref={navigationRef} theme={mode === 'dark' ? navDarkTheme : navLightTheme}>
+              <RootNavigator />
+            </NavigationContainer>
+          </WorkModeProvider>
+        </ChatProvider>
       </AuthProvider>
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
     </PaperProvider>

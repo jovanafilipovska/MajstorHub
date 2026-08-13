@@ -7,7 +7,9 @@ import { BookingsStackNavigator } from './BookingsStackNavigator';
 import { ProfileStackNavigator } from './ProfileStackNavigator';
 import { CraftsmanProfileStackNavigator } from './CraftsmanProfileStackNavigator';
 import { SettingsStackNavigator } from './SettingsStackNavigator';
+import { MessagesStackNavigator } from './MessagesStackNavigator';
 import { useWorkMode } from '../contexts/WorkModeContext';
+import { useChat } from '../contexts/ChatContext';
 import { useTranslation } from '../i18n';
 import { navigationRef } from './navigationRef';
 import type { MainTabParamList } from './types';
@@ -16,6 +18,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export function MainTabNavigator() {
   const { mode } = useWorkMode();
+  const { totalUnread } = useChat();
   const t = useTranslation();
 
   // Jumps to each mode's landing tab whenever the role switches. `initialRouteName`
@@ -67,6 +70,17 @@ export function MainTabNavigator() {
           }}
         />
       )}
+      <Tab.Screen
+        name="MessagesTab"
+        component={MessagesStackNavigator}
+        options={{
+          title: t.nav.messages,
+          tabBarBadge: totalUnread > 0 ? totalUnread : undefined,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="message-text-outline" color={color} size={size} />
+          ),
+        }}
+      />
       <Tab.Screen
         name="ProfileTab"
         component={mode === 'craftsman' ? CraftsmanProfileStackNavigator : ProfileStackNavigator}

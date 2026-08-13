@@ -44,6 +44,7 @@ export const en = {
     browse: 'Browse',
     dashboard: 'Dashboard',
     bookings: 'Bookings',
+    messages: 'Messages',
     profile: 'Profile',
     settings: 'Settings',
     receivedBookingsTitle: 'Received Bookings',
@@ -175,6 +176,7 @@ export const en = {
     total: 'Total',
     leaveReviewButton: 'Leave a Review',
     reviewSubmitted: 'You reviewed this booking.',
+    messageButton: 'Message',
     failedToLoad: 'Failed to load booking.',
     failedToUpdate: 'Failed to update booking.',
   },
@@ -310,6 +312,13 @@ export const en = {
   myReviews: {
     noReviewsYet: 'No reviews yet.',
     failedToLoad: 'Failed to load reviews.',
+  },
+  messages: {
+    emptyConversations: 'No conversations yet.',
+    failedToLoadConversations: 'Failed to load conversations.',
+    failedToLoadHistory: 'Failed to load messages.',
+    composePlaceholder: 'Type a message',
+    failedToSend: 'Failed to send message.',
   },
   roleSwitcher: {
     customer: 'Customer',

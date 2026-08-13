@@ -92,6 +92,33 @@ export interface ReviewResponse {
   createdAt: string;
 }
 
+export interface MessageResponse {
+  id: string;
+  bookingId: string;
+  senderId: string;
+  senderName: string;
+  body: string;
+  createdAt: string;
+  readAt?: string;
+}
+
+export interface SendMessageRequest {
+  bookingId: string;
+  body: string;
+}
+
+export interface ConversationSummaryResponse {
+  bookingId: string;
+  bookingStatus: BookingStatus;
+  serviceCategoryName: string;
+  otherPartyId: string;
+  otherPartyName: string;
+  otherPartyProfileImageUrl?: string;
+  lastMessagePreview?: string;
+  lastMessageAt?: string;
+  unreadCount: number;
+}
+
 export interface RegisterRequest {
   firstName: string;
   lastName: string;
