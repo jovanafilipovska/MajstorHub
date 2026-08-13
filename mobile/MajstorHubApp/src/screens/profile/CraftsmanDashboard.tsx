@@ -4,8 +4,9 @@ import { StyleSheet, View } from 'react-native';
 import { Avatar, Button, HelperText, Switch, Text, useTheme } from 'react-native-paper';
 import { updateBookingStatus } from '../../api/bookings';
 import { updateMyProfile } from '../../api/craftsmen';
-import { ApiError, resolveMediaUrl } from '../../api/client';
+import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { BookingResponse, CraftsmanProfileResponse } from '../../types/api';
 
 function initialsOf(fullName: string): string {
@@ -50,12 +51,13 @@ interface Props {
   bookings: BookingResponse[];
   onProfileChange: (profile: CraftsmanProfileResponse) => void;
   onBookingsChange: Dispatch<SetStateAction<BookingResponse[]>>;
-  onEditProfile: () => void;
+  onViewReviews: () => void;
 }
 
-export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBookingsChange, onEditProfile }: Props) {
+export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBookingsChange, onViewReviews }: Props) {
   const { user, token } = useAuth();
   const theme = useTheme();
+  const t = useTranslation();
   const [toggling, setToggling] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +79,7 @@ export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBooki
       const updated = await updateMyProfile({ isAvailable: !profile.isAvailable }, token);
       onProfileChange(updated);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to update availability.');
+      setError(apiErrorMessage(err, t, t.craftsmanDashboard.failedToUpdateAvailability));
     } finally {
       setToggling(false);
     }
@@ -91,7 +93,7 @@ export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBooki
       const updated = await updateBookingStatus(bookingId, status, token);
       onBookingsChange((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to update booking.');
+      setError(apiErrorMessage(err, t, t.craftsmanDashboard.failedToUpdateBooking));
     } finally {
       setActioningId(null);
     }
@@ -112,32 +114,36 @@ export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBooki
         )}
         <View style={styles.welcomeText}>
           <Text variant="labelLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-            Welcome
+            {t.craftsmanDashboard.welcome}
           </Text>
           <Text variant="titleLarge">{profile.businessName || user?.fullName}</Text>
         </View>
-        <Button compact onPress={onEditProfile}>
-          Edit
-        </Button>
       </View>
 
       <View style={styles.statsRow}>
-        <StatTile label="Today" value={String(todayCount)} />
-        <StatTile label="Rating" value={profile.averageRating ? profile.averageRating.toFixed(1) : '—'} />
-        <StatTile label="This week" value={`$${weeklyEarnings.toFixed(0)}`} />
+        <StatTile label={t.craftsmanDashboard.todayStat} value={String(todayCount)} />
+        <StatTile
+          label={t.craftsmanDashboard.ratingStat}
+          value={profile.averageRating ? profile.averageRating.toFixed(1) : '—'}
+        />
+        <StatTile label={t.craftsmanDashboard.thisWeekStat} value={`$${weeklyEarnings.toFixed(0)}`} />
       </View>
 
+      <Button mode="outlined" icon="star-outline" onPress={onViewReviews}>
+        {t.craftsmanDashboard.viewAllReviews}
+      </Button>
+
       <View style={[styles.availableRow, { backgroundColor: theme.colors.surfaceVariant }]}>
-        <Text variant="bodyMedium">Available now</Text>
+        <Text variant="bodyMedium">{t.craftsmanDashboard.availableNow}</Text>
         <Switch value={profile.isAvailable} onValueChange={toggleAvailable} disabled={toggling} />
       </View>
 
       <Text variant="titleMedium" style={styles.sectionTitle}>
-        Incoming requests
+        {t.craftsmanDashboard.incomingRequests}
       </Text>
       {incoming.length === 0 ? (
         <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-          No new requests.
+          {t.craftsmanDashboard.noNewRequests}
         </Text>
       ) : (
         incoming.map((booking) => (
@@ -161,7 +167,7 @@ export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBooki
                 disabled={actioningId !== null}
                 onPress={() => act(booking.id, 'Rejected')}
               >
-                Decline
+                {t.craftsmanDashboard.decline}
               </Button>
               <Button
                 mode="contained"
@@ -170,7 +176,7 @@ export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBooki
                 disabled={actioningId !== null}
                 onPress={() => act(booking.id, 'Accepted')}
               >
-                Accept
+                {t.craftsmanDashboard.accept}
               </Button>
             </View>
           </View>
@@ -184,7 +190,6 @@ export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBooki
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
     gap: 12,
   },
   welcomeRow: {

@@ -16,6 +16,7 @@ public static class BookingMappings
             CraftsmanProfileId = booking.CraftsmanProfileId,
             CraftsmanName = booking.CraftsmanProfile.User.FullName,
             CraftsmanProfileImageUrl = booking.CraftsmanProfile.User.ProfileImageUrl,
+            ServiceCategoryId = booking.ServiceCategoryId,
             ServiceCategoryName = booking.ServiceCategory.Name,
             Description = booking.Description,
             Address = booking.Address,
@@ -26,7 +27,8 @@ public static class BookingMappings
             Status = booking.Status,
             PriceQuote = booking.PriceQuote,
             CreatedAt = booking.CreatedAt,
-            UpdatedAt = booking.UpdatedAt
+            UpdatedAt = booking.UpdatedAt,
+            HasReview = booking.Review != null
         };
     }
 }

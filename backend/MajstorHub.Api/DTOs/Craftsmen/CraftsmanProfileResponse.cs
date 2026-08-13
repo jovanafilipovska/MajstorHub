@@ -16,6 +16,7 @@ public class CraftsmanProfileResponse
     public string? AddressText { get; set; }
     public bool IsAvailable { get; set; }
     public bool IsVerified { get; set; }
+    public int ViewCount { get; set; }
     public double? AverageRating { get; set; }
     public int ReviewCount { get; set; }
     public DateTimeOffset CreatedAt { get; set; }

@@ -7,7 +7,8 @@ import * as Location from 'expo-location';
 import { Avatar, Chip, Menu, Searchbar, Text, useTheme } from 'react-native-paper';
 import { listServiceCategories } from '../../api/serviceCategories';
 import { listAllCraftsmen, listCraftsmenByCategory } from '../../api/craftsmen';
-import { ApiError, resolveMediaUrl } from '../../api/client';
+import { getMyBookings } from '../../api/bookings';
+import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { Language } from '../../contexts/LanguageContext';
@@ -15,8 +16,9 @@ import { distanceKm } from '../../utils/geo';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { CraftsmanCard } from '../../components/CraftsmanCard';
+import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { BrowseStackParamList } from '../../navigation/types';
-import type { CraftsmanProfileResponse, ServiceCategoryResponse } from '../../types/api';
+import type { BookingResponse, CraftsmanProfileResponse, ServiceCategoryResponse } from '../../types/api';
 
 type Props = NativeStackScreenProps<BrowseStackParamList, 'Home'>;
 type CategoryFilter = 'all' | number;
@@ -29,6 +31,9 @@ const NEAR_YOU_RADIUS_KM = 20;
 const NEAR_YOU_CARD_WIDTH = 160;
 const NEW_CARD_WIDTH = 160;
 const NEW_COUNT = 8;
+const RECOMMENDED_CARD_WIDTH = 160;
+const RECOMMENDED_COUNT = 8;
+const RECOMMENDED_CATEGORY_BOOKING_THRESHOLD = 3;
 
 const LANGUAGE_LABELS: Record<Language, string> = { mk: 'MK', sq: 'SQ', en: 'EN' };
 
@@ -59,7 +64,8 @@ const GRID_GAP = 12;
 export function HomeScreen({ navigation }: Props) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const t = useTranslation();
+  const { user, token } = useAuth();
   const { language, setLanguage } = useLanguage();
   const { width } = useWindowDimensions();
   const searchCardWidth = (width - GRID_PADDING * 2 - GRID_GAP) / 2;
@@ -67,6 +73,7 @@ export function HomeScreen({ navigation }: Props) {
   const [categories, setCategories] = useState<ServiceCategoryResponse[] | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [craftsmen, setCraftsmen] = useState<CraftsmanProfileResponse[] | null>(null);
+  const [myBookings, setMyBookings] = useState<BookingResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [langMenuOpen, setLangMenuOpen] = useState(false);
@@ -99,8 +106,8 @@ export function HomeScreen({ navigation }: Props) {
     setError(null);
     listServiceCategories()
       .then(setCategories)
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Failed to load categories.'));
-  }, []);
+      .catch((err) => setError(apiErrorMessage(err, t, t.home.failedToLoadCategories)));
+  }, [t]);
 
   useFocusEffect(loadCategories);
 
@@ -109,13 +116,25 @@ export function HomeScreen({ navigation }: Props) {
       const request = typeof categoryFilter === 'number' ? listCraftsmenByCategory(categoryFilter) : listAllCraftsmen();
       request
         .then(setCraftsmen)
-        .catch((err) => setError(err instanceof ApiError ? err.message : 'Failed to load craftsmen.'));
-    }, [categoryFilter]),
+        .catch((err) => setError(apiErrorMessage(err, t, t.home.failedToLoadCraftsmen)));
+    }, [categoryFilter, t]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      // Feeds "Recommended for you" - non-critical, so a failure here just
+      // means that section falls back to popularity-only recommendations.
+      if (!token) return;
+      getMyBookings(token)
+        .then(setMyBookings)
+        .catch(() => {});
+    }, [token]),
   );
 
   const chipItems = useMemo(
-    (): { id: CategoryFilter; name: string }[] => (categories ? [{ id: 'all', name: 'All' }, ...categories] : []),
-    [categories],
+    (): { id: CategoryFilter; name: string }[] =>
+      categories ? [{ id: 'all', name: t.home.categoryAll }, ...categories] : [],
+    [categories, t],
   );
 
   const filtered = useMemo(() => {
@@ -134,6 +153,42 @@ export function HomeScreen({ navigation }: Props) {
         .slice(0, NEW_COUNT),
     [filtered],
   );
+
+  const recommended = useMemo(() => {
+    if (!user) return [];
+
+    // Categories the user has booked from 3+ times as a client - a signal of
+    // trade affinity (they keep hiring plumbers, say), not just one-off jobs.
+    const categoryBookingCounts = new Map<number, number>();
+    for (const booking of myBookings) {
+      if (booking.clientId !== user.id) continue;
+      categoryBookingCounts.set(
+        booking.serviceCategoryId,
+        (categoryBookingCounts.get(booking.serviceCategoryId) ?? 0) + 1,
+      );
+    }
+    const affinityCategoryIds = new Set(
+      [...categoryBookingCounts.entries()]
+        .filter(([, count]) => count >= RECOMMENDED_CATEGORY_BOOKING_THRESHOLD)
+        .map(([categoryId]) => categoryId),
+    );
+
+    const candidates = filtered.filter((item) => item.userId !== user.id);
+    const byCategoryAffinity = candidates.filter((item) => affinityCategoryIds.has(item.serviceCategoryId));
+    // Falls back to (and tops up with) the most-viewed profiles overall, so
+    // the section still has content for users without an established affinity.
+    const byPopularity = [...candidates].sort((a, b) => b.viewCount - a.viewCount);
+
+    const merged: CraftsmanProfileResponse[] = [];
+    const seen = new Set<string>();
+    for (const item of [...byCategoryAffinity, ...byPopularity]) {
+      if (seen.has(item.userId)) continue;
+      seen.add(item.userId);
+      merged.push(item);
+      if (merged.length >= RECOMMENDED_COUNT) break;
+    }
+    return merged;
+  }, [filtered, myBookings, user]);
 
   const distanceOf = useCallback(
     (item: CraftsmanProfileResponse): number | null => {
@@ -169,7 +224,7 @@ export function HomeScreen({ navigation }: Props) {
         <View style={styles.topRow}>
           <View>
             <Text variant="labelLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-              Hello
+              {t.home.greeting}
             </Text>
             <Text variant="headlineSmall">{user?.fullName}</Text>
           </View>
@@ -214,7 +269,7 @@ export function HomeScreen({ navigation }: Props) {
         </View>
 
         <Searchbar
-          placeholder="Search services"
+          placeholder={t.home.searchPlaceholder}
           value={query}
           onChangeText={setQuery}
           style={[styles.searchbar, { backgroundColor: theme.colors.surface }]}
@@ -246,10 +301,28 @@ export function HomeScreen({ navigation }: Props) {
         </ScrollView>
       </View>
 
+      {!isFiltering && recommended.length > 0 && (
+        <View style={styles.section}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            {t.home.recommendedForYou}
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.nearYouRow}>
+            {recommended.map((item) => (
+              <CraftsmanCard
+                key={item.userId}
+                item={item}
+                width={RECOMMENDED_CARD_WIDTH}
+                onPress={() => goToDetail(item)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       {!isFiltering && newToMajstorHub.length > 0 && (
         <View style={styles.section}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            New to MajstorHub
+            {t.home.newToMajstorHub}
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.nearYouRow}>
             {newToMajstorHub.map((item) => (
@@ -262,7 +335,7 @@ export function HomeScreen({ navigation }: Props) {
       {isFiltering && (
         <View style={styles.section}>
           {filtered.length === 0 ? (
-            <Text style={[styles.empty, { color: theme.colors.onSurfaceVariant }]}>No craftsmen found.</Text>
+            <Text style={[styles.empty, { color: theme.colors.onSurfaceVariant }]}>{t.home.noCraftsmenFound}</Text>
           ) : (
             chunkPairs(filtered).map((row, index) => (
               <View key={index} style={styles.searchResultRow}>
@@ -283,7 +356,7 @@ export function HomeScreen({ navigation }: Props) {
       {!isFiltering && coords && (
         <View style={styles.section}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            Near Me
+            {t.home.nearMe}
           </Text>
           {nearYou.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.nearYouRow}>
@@ -299,7 +372,7 @@ export function HomeScreen({ navigation }: Props) {
             </ScrollView>
           ) : (
             <Text variant="bodySmall" style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>
-              No craftsmen within {NEAR_YOU_RADIUS_KM}km of you.
+              {t.home.noCraftsmenNearby(NEAR_YOU_RADIUS_KM)}
             </Text>
           )}
         </View>

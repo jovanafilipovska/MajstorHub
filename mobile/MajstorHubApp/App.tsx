@@ -15,6 +15,7 @@ import { WorkModeProvider } from './src/contexts/WorkModeContext';
 import { ThemeProvider, useThemeMode } from './src/contexts/ThemeContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { navigationRef } from './src/navigation/navigationRef';
 import { LoadingView } from './src/components/LoadingView';
 import { lightTheme, darkTheme } from './src/theme';
 
@@ -41,7 +42,7 @@ function AppShell() {
     <PaperProvider theme={activeTheme}>
       <AuthProvider>
         <WorkModeProvider>
-          <NavigationContainer theme={mode === 'dark' ? navDarkTheme : navLightTheme}>
+          <NavigationContainer ref={navigationRef} theme={mode === 'dark' ? navDarkTheme : navLightTheme}>
             <RootNavigator />
           </NavigationContainer>
         </WorkModeProvider>

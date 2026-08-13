@@ -3,9 +3,9 @@ import { StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, HelperText, Text, TextInput } from 'react-native-paper';
 import { createReview } from '../../api/reviews';
-import { ApiError } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { StarRatingInput } from '../../components/StarRatingInput';
+import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { BookingsStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<BookingsStackParamList, 'LeaveReview'>;
@@ -13,6 +13,7 @@ type Props = NativeStackScreenProps<BookingsStackParamList, 'LeaveReview'>;
 export function LeaveReviewScreen({ route, navigation }: Props) {
   const { bookingId, craftsmanName } = route.params;
   const { token } = useAuth();
+  const t = useTranslation();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +27,7 @@ export function LeaveReviewScreen({ route, navigation }: Props) {
       await createReview({ bookingId, rating, comment: comment.trim() || undefined }, token);
       navigation.goBack();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to submit review.');
+      setError(apiErrorMessage(err, t, t.leaveReview.failedToSubmit));
     } finally {
       setSubmitting(false);
     }
@@ -34,10 +35,10 @@ export function LeaveReviewScreen({ route, navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text variant="titleMedium">Rate {craftsmanName}</Text>
+      <Text variant="titleMedium">{t.leaveReview.title(craftsmanName)}</Text>
       <StarRatingInput rating={rating} onChange={setRating} />
       <TextInput
-        label="Comment (optional)"
+        label={t.leaveReview.commentLabel}
         value={comment}
         onChangeText={setComment}
         mode="outlined"
@@ -46,7 +47,7 @@ export function LeaveReviewScreen({ route, navigation }: Props) {
       />
       {error && <HelperText type="error">{error}</HelperText>}
       <Button mode="contained" onPress={onSubmit} loading={submitting} disabled={rating < 1 || submitting}>
-        Submit Review
+        {t.leaveReview.submit}
       </Button>
     </View>
   );

@@ -4,9 +4,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Avatar, Card, Chip, Icon, Text, useTheme } from 'react-native-paper';
 import { listCraftsmenByCategory } from '../../api/craftsmen';
-import { ApiError, resolveMediaUrl } from '../../api/client';
+import { resolveMediaUrl } from '../../api/client';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
+import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { BrowseStackParamList } from '../../navigation/types';
 import type { CraftsmanProfileResponse } from '../../types/api';
 
@@ -23,6 +24,7 @@ function initialsOf(fullName: string): string {
 
 export function CraftsmenListScreen({ route, navigation }: Props) {
   const theme = useTheme();
+  const t = useTranslation();
   const { categoryId, categoryName } = route.params;
   const [craftsmen, setCraftsmen] = useState<CraftsmanProfileResponse[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -31,8 +33,8 @@ export function CraftsmenListScreen({ route, navigation }: Props) {
     setError(null);
     listCraftsmenByCategory(categoryId)
       .then(setCraftsmen)
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Failed to load craftsmen.'));
-  }, [categoryId]);
+      .catch((err) => setError(apiErrorMessage(err, t, t.craftsmenList.failedToLoad)));
+  }, [categoryId, t]);
 
   useFocusEffect(load);
 
@@ -44,9 +46,7 @@ export function CraftsmenListScreen({ route, navigation }: Props) {
       contentContainerStyle={styles.list}
       data={craftsmen}
       keyExtractor={(item) => item.userId}
-      ListEmptyComponent={
-        <Text style={styles.empty}>No {categoryName} craftsmen yet.</Text>
-      }
+      ListEmptyComponent={<Text style={styles.empty}>{t.craftsmenList.empty(categoryName)}</Text>}
       renderItem={({ item }) => (
         <Card
           style={styles.card}
@@ -62,7 +62,9 @@ export function CraftsmenListScreen({ route, navigation }: Props) {
           <Card.Title
             title={item.fullName}
             subtitle={`$${item.hourlyRate.toFixed(2)}/hr${
-              item.averageRating ? ` · ${item.averageRating.toFixed(1)}★ (${item.reviewCount})` : ' · No ratings yet'
+              item.averageRating
+                ? ` · ${item.averageRating.toFixed(1)}★ (${item.reviewCount})`
+                : ` · ${t.craftsmenList.noRatingsYet}`
             }`}
             left={(props) =>
               item.profileImageUrl ? (
@@ -79,7 +81,7 @@ export function CraftsmenListScreen({ route, navigation }: Props) {
           />
           <Card.Content>
             <View style={styles.chipRow}>
-              <Chip compact>{item.isAvailable ? 'Available' : 'Unavailable'}</Chip>
+              <Chip compact>{item.isAvailable ? t.craftsmenList.available : t.craftsmenList.unavailable}</Chip>
             </View>
           </Card.Content>
         </Card>

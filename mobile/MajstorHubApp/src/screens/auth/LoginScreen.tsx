@@ -3,13 +3,14 @@ import { StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, HelperText, Text, TextInput } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
-import { ApiError } from '../../api/client';
+import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { AuthStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation }: Props) {
   const { login } = useAuth();
+  const t = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -24,7 +25,7 @@ export function LoginScreen({ navigation }: Props) {
     try {
       await login({ email: email.trim(), password });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+      setError(apiErrorMessage(err, t, t.common.genericError));
     } finally {
       setSubmitting(false);
     }
@@ -37,7 +38,7 @@ export function LoginScreen({ navigation }: Props) {
       </Text>
 
       <TextInput
-        label="Email"
+        label={t.auth.login.emailLabel}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -45,7 +46,7 @@ export function LoginScreen({ navigation }: Props) {
         mode="outlined"
       />
       <TextInput
-        label="Password"
+        label={t.auth.login.passwordLabel}
         value={password}
         onChangeText={setPassword}
         secureTextEntry={!passwordVisible}
@@ -61,10 +62,10 @@ export function LoginScreen({ navigation }: Props) {
       {error && <HelperText type="error">{error}</HelperText>}
 
       <Button mode="contained" onPress={onSubmit} loading={submitting} disabled={!canSubmit}>
-        Log In
+        {t.auth.login.submit}
       </Button>
       <Button mode="text" onPress={() => navigation.navigate('Register')}>
-        Don't have an account? Register
+        {t.auth.login.noAccount}
       </Button>
     </View>
   );

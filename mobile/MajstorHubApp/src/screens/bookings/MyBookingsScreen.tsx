@@ -1,18 +1,22 @@
 import { useCallback, useState } from 'react';
-import { FlatList, StyleSheet } from 'react-native';
+import { FlatList, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Avatar, Card, Text, useTheme } from 'react-native-paper';
+import { Avatar, Card, Chip, Text, useTheme } from 'react-native-paper';
 import { getMyBookings } from '../../api/bookings';
-import { ApiError, resolveMediaUrl } from '../../api/client';
+import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { useWorkMode } from '../../contexts/WorkModeContext';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { StatusBadge } from '../../components/StatusBadge';
+import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { BookingsStackParamList } from '../../navigation/types';
-import type { BookingResponse } from '../../types/api';
+import type { BookingResponse, BookingStatus } from '../../types/api';
 
 type Props = NativeStackScreenProps<BookingsStackParamList, 'MyBookings'>;
+
+const STATUS_FILTERS: Array<BookingStatus | 'All'> = ['All', 'Pending', 'Accepted', 'Completed', 'Rejected', 'Cancelled'];
 
 function initialsOf(fullName: string): string {
   const initials = fullName
@@ -25,9 +29,12 @@ function initialsOf(fullName: string): string {
 
 export function MyBookingsScreen({ navigation }: Props) {
   const { user, token } = useAuth();
+  const { mode } = useWorkMode();
   const theme = useTheme();
+  const t = useTranslation();
   const [bookings, setBookings] = useState<BookingResponse[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<BookingStatus | 'All'>('All');
 
   const load = useCallback(() => {
     if (!token) return;
@@ -37,22 +44,58 @@ export function MyBookingsScreen({ navigation }: Props) {
       .then(setBookings)
       .catch((err) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        setError(err instanceof ApiError ? err.message : 'Failed to load bookings.');
+        setError(apiErrorMessage(err, t, t.myBookings.failedToLoad));
       });
     return () => controller.abort();
-  }, [token]);
+  }, [token, t]);
 
   useFocusEffect(load);
 
   if (error) return <ErrorView message={error} onRetry={load} />;
   if (!bookings) return <LoadingView />;
 
+  // Craftsman mode shows bookings received as the provider; client mode shows
+  // bookings the user made as the customer - a single user can be both across
+  // different bookings, so this list is scoped to the role they're viewing as.
+  const visibleBookings = bookings.filter((b) =>
+    mode === 'craftsman' ? b.craftsmanProfileId === user?.id : b.clientId === user?.id,
+  );
+  const filteredBookings =
+    statusFilter === 'All' ? visibleBookings : visibleBookings.filter((b) => b.status === statusFilter);
+
   return (
     <FlatList
       contentContainerStyle={styles.list}
-      data={bookings}
+      data={filteredBookings}
       keyExtractor={(item) => item.id}
-      ListEmptyComponent={<Text style={styles.empty}>No bookings yet.</Text>}
+      ListHeaderComponent={
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+          {STATUS_FILTERS.map((status) => (
+            <Chip
+              key={status}
+              selected={statusFilter === status}
+              showSelectedCheck={false}
+              onPress={() => setStatusFilter(status)}
+              style={{
+                backgroundColor: statusFilter === status ? theme.colors.primary : theme.colors.surfaceVariant,
+                borderColor: statusFilter === status ? theme.colors.primary : theme.colors.outline,
+              }}
+              textStyle={{ color: statusFilter === status ? theme.colors.onPrimary : theme.colors.onSurface }}
+            >
+              {t.status[status]}
+            </Chip>
+          ))}
+        </ScrollView>
+      }
+      ListEmptyComponent={
+        <Text style={styles.empty}>
+          {visibleBookings.length === 0
+            ? mode === 'craftsman'
+              ? t.myBookings.noReceivedBookings
+              : t.myBookings.noMadeBookings
+            : t.myBookings.noStatusBookings(t.status[statusFilter])}
+        </Text>
+      }
       renderItem={({ item }) => {
         const isClient = item.clientId === user?.id;
         const otherPartyName = isClient ? item.craftsmanName : item.clientName;
@@ -92,6 +135,11 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 12,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingBottom: 4,
   },
   empty: {
     textAlign: 'center',

@@ -7,12 +7,11 @@ import { Avatar, Card, Divider, HelperText, Icon, List, Menu, Text, TouchableRip
 import { getMyBookings } from '../../api/bookings';
 import { listFavorites } from '../../api/favorites';
 import { removeMyPhoto, uploadMyPhoto } from '../../api/users';
-import { ApiError, resolveMediaUrl } from '../../api/client';
+import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
-import { useWorkMode } from '../../contexts/WorkModeContext';
 import { LoadingView } from '../../components/LoadingView';
 import { RoleSwitcher } from '../../components/RoleSwitcher';
-import { CraftsmanHome } from './CraftsmanHome';
+import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { ProfileStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Profile'>;
@@ -44,8 +43,8 @@ function StatTile({ label, value, onPress }: { label: string; value: number | nu
 
 export function ProfileScreen({ navigation }: Props) {
   const { user, token, refreshUser, logout } = useAuth();
-  const { mode } = useWorkMode();
   const theme = useTheme();
+  const t = useTranslation();
 
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -54,16 +53,16 @@ export function ProfileScreen({ navigation }: Props) {
   const [favoriteCount, setFavoriteCount] = useState<number | null>(null);
 
   const loadStats = useCallback(() => {
-    if (!token || mode !== 'client') return;
+    if (!token || !user) return;
     Promise.all([getMyBookings(token), listFavorites(token)])
       .then(([bookings, favorites]) => {
-        setBookingCount(bookings.length);
+        setBookingCount(bookings.filter((b) => b.clientId === user.id).length);
         setFavoriteCount(favorites.length);
       })
       .catch(() => {
         // Stat tiles are supplementary; leave them blank rather than blocking the screen.
       });
-  }, [token, mode]);
+  }, [token, user]);
 
   useFocusEffect(loadStats);
 
@@ -73,7 +72,7 @@ export function ProfileScreen({ navigation }: Props) {
     setPhotoError(null);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setPhotoError('Photo library permission is required to change your profile picture.');
+      setPhotoError(t.profile.photoPermission);
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -88,7 +87,7 @@ export function ProfileScreen({ navigation }: Props) {
       await uploadMyPhoto(result.assets[0].uri, token);
       await refreshUser();
     } catch (err) {
-      setPhotoError(err instanceof ApiError ? err.message : 'Failed to update photo.');
+      setPhotoError(apiErrorMessage(err, t, t.profile.failedToUpdatePhoto));
     } finally {
       setUploadingPhoto(false);
     }
@@ -103,7 +102,7 @@ export function ProfileScreen({ navigation }: Props) {
       await removeMyPhoto(token);
       await refreshUser();
     } catch (err) {
-      setPhotoError(err instanceof ApiError ? err.message : 'Failed to remove photo.');
+      setPhotoError(apiErrorMessage(err, t, t.profile.failedToRemovePhoto));
     } finally {
       setUploadingPhoto(false);
     }
@@ -146,8 +145,8 @@ export function ProfileScreen({ navigation }: Props) {
               </TouchableRipple>
             }
           >
-            <Menu.Item onPress={choosePhoto} title="Change photo" leadingIcon="image-edit-outline" />
-            <Menu.Item onPress={removePhoto} title="Remove photo" leadingIcon="delete-outline" />
+            <Menu.Item onPress={choosePhoto} title={t.profile.changePhoto} leadingIcon="image-edit-outline" />
+            <Menu.Item onPress={removePhoto} title={t.profile.removePhoto} leadingIcon="delete-outline" />
           </Menu>
           <View style={[styles.avatarBadge, { backgroundColor: theme.colors.primary }]}>
             <Icon source="camera" size={14} color={theme.colors.onPrimary} />
@@ -167,45 +166,39 @@ export function ProfileScreen({ navigation }: Props) {
         </View>
       </View>
 
-      {mode === 'client' ? (
-        <>
-          <View style={styles.statsRow}>
-            <StatTile label="Bookings" value={bookingCount} onPress={() => navigation.navigate('MyBookings')} />
-            <StatTile label="Saved pros" value={favoriteCount} onPress={() => navigation.navigate('Favorites')} />
-          </View>
-
-          <Text variant="labelLarge" style={styles.groupLabel}>
-            ACCOUNT
-          </Text>
-          <Card style={styles.groupCard} mode="contained">
-            <List.Item
-              title="Favorite pros"
-              onPress={() => navigation.navigate('Favorites')}
-              right={(props) => <List.Icon {...props} icon="chevron-right" />}
-            />
-            <Divider />
-            <List.Item
-              title="Booking history"
-              onPress={() => navigation.navigate('MyBookings')}
-              right={(props) => <List.Icon {...props} icon="chevron-right" />}
-            />
-          </Card>
-        </>
-      ) : (
-        <CraftsmanHome navigation={navigation} />
-      )}
+      <View style={styles.statsRow}>
+        <StatTile label={t.profile.bookingsStat} value={bookingCount} onPress={() => navigation.navigate('MyBookings')} />
+        <StatTile label={t.profile.savedProsStat} value={favoriteCount} onPress={() => navigation.navigate('Favorites')} />
+      </View>
 
       <Text variant="labelLarge" style={styles.groupLabel}>
-        SUPPORT
+        {t.profile.accountGroup}
       </Text>
       <Card style={styles.groupCard} mode="contained">
         <List.Item
-          title="Settings"
+          title={t.profile.favoritePros}
+          onPress={() => navigation.navigate('Favorites')}
+          right={(props) => <List.Icon {...props} icon="chevron-right" />}
+        />
+        <Divider />
+        <List.Item
+          title={t.profile.bookingHistory}
+          onPress={() => navigation.navigate('MyBookings')}
+          right={(props) => <List.Icon {...props} icon="chevron-right" />}
+        />
+      </Card>
+
+      <Text variant="labelLarge" style={styles.groupLabel}>
+        {t.profile.supportGroup}
+      </Text>
+      <Card style={styles.groupCard} mode="contained">
+        <List.Item
+          title={t.profile.settings}
           onPress={() => navigation.navigate('Settings')}
           right={(props) => <List.Icon {...props} icon="chevron-right" />}
         />
         <Divider />
-        <List.Item title="Log out" titleStyle={{ color: theme.colors.error }} onPress={() => logout()} />
+        <List.Item title={t.common.logOut} titleStyle={{ color: theme.colors.error }} onPress={() => logout()} />
       </Card>
     </ScrollView>
   );
@@ -243,6 +236,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   roleSwitcherWrap: {
+    alignSelf: 'stretch',
     marginTop: 12,
   },
   statsRow: {

@@ -38,6 +38,10 @@ export function getCraftsmanReviews(userId: string): Promise<ReviewResponse[]> {
   return apiClient.get<ReviewResponse[]>(`/craftsmen/${userId}/reviews`);
 }
 
+export function recordProfileView(userId: string): Promise<void> {
+  return apiClient.post<void>(`/craftsmen/${userId}/view`);
+}
+
 export function verifyCraftsman(
   userId: string,
   isVerified: boolean,

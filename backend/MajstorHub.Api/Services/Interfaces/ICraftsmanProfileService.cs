@@ -11,4 +11,5 @@ public interface ICraftsmanProfileService
     Task<CraftsmanProfileResponse> UpdateAsync(Guid userId, UpdateCraftsmanProfileRequest request);
     Task<CraftsmanProfileResponse> VerifyAsync(Guid userId, bool isVerified);
     Task<List<CraftsmanProfileResponse>> SearchNearbyAsync(double latitude, double longitude, double radiusKm);
+    Task RecordViewAsync(Guid userId, Guid? viewerUserId);
 }

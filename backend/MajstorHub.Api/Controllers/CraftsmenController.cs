@@ -59,6 +59,15 @@ public class CraftsmenController(ICraftsmanProfileService craftsmanProfileServic
         return Ok(await craftsmanProfileService.GetAllAsync());
     }
 
+    [HttpPost("{userId:guid}/view")]
+    [AllowAnonymous]
+    public async Task<IActionResult> RecordView(Guid userId)
+    {
+        Guid? viewerId = User.Identity?.IsAuthenticated == true ? User.GetUserId() : null;
+        await craftsmanProfileService.RecordViewAsync(userId, viewerId);
+        return NoContent();
+    }
+
     [HttpGet("{userId:guid}/reviews")]
     [AllowAnonymous]
     public async Task<ActionResult<List<ReviewResponse>>> GetReviews(Guid userId)

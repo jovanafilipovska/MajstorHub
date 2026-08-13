@@ -110,6 +110,21 @@ public class CraftsmanProfileService(
         return await MapWithRatingsAsync(profiles);
     }
 
+    public async Task RecordViewAsync(Guid userId, Guid? viewerUserId)
+    {
+        // Skip self-views so a craftsman loading their own dashboard/profile
+        // editor - which shares this same GetById-backed data - doesn't inflate
+        // their own popularity signal.
+        if (viewerUserId == userId) return;
+
+        var profile = await craftsmanProfileRepository.GetByUserIdAsync(userId);
+        if (profile is null) return;
+
+        profile.ViewCount++;
+        craftsmanProfileRepository.Update(profile);
+        await craftsmanProfileRepository.SaveChangesAsync();
+    }
+
     private async Task<List<CraftsmanProfileResponse>> MapWithRatingsAsync(List<CraftsmanProfile> profiles)
     {
         var results = new List<CraftsmanProfileResponse>();

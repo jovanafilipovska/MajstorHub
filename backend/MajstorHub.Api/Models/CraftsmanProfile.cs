@@ -14,6 +14,7 @@ public class CraftsmanProfile
     public string? AddressText { get; set; }
     public bool IsAvailable { get; set; } = true;
     public bool IsVerified { get; set; }
+    public int ViewCount { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 

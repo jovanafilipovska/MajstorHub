@@ -1,8 +1,10 @@
 import { StyleSheet, View } from 'react-native';
 import { Button, Text, useTheme } from 'react-native-paper';
+import { useTranslation } from '../i18n';
 
 export function ErrorView({ message, onRetry }: { message: string; onRetry?: () => void }) {
   const theme = useTheme();
+  const t = useTranslation();
 
   return (
     <View style={styles.container}>
@@ -11,7 +13,7 @@ export function ErrorView({ message, onRetry }: { message: string; onRetry?: () 
       </Text>
       {onRetry && (
         <Button mode="outlined" onPress={onRetry}>
-          Retry
+          {t.common.retry}
         </Button>
       )}
     </View>

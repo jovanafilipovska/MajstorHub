@@ -11,6 +11,7 @@ public class BookingResponse
     public Guid CraftsmanProfileId { get; set; }
     public string CraftsmanName { get; set; } = string.Empty;
     public string? CraftsmanProfileImageUrl { get; set; }
+    public int ServiceCategoryId { get; set; }
     public string ServiceCategoryName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
@@ -22,4 +23,5 @@ public class BookingResponse
     public decimal? PriceQuote { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
+    public bool HasReview { get; set; }
 }

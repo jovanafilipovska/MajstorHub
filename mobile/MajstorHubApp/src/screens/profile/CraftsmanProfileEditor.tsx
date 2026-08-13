@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -11,12 +11,14 @@ import { ApiError, resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkMode } from '../../contexts/WorkModeContext';
 import { LoadingView } from '../../components/LoadingView';
+import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { CraftsmanProfileResponse, ServiceCategoryResponse } from '../../types/api';
 
 export function CraftsmanProfileEditor() {
   const { user, token, refreshUser } = useAuth();
   const { refreshHasCraftsmanProfile } = useWorkMode();
   const theme = useTheme();
+  const t = useTranslation();
   const [categories, setCategories] = useState<ServiceCategoryResponse[]>([]);
   const [mode, setMode] = useState<'create' | 'edit' | null>(null);
 
@@ -48,18 +50,18 @@ export function CraftsmanProfileEditor() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setLocationError('Location permission is required so clients can find you nearby.');
+        setLocationError(t.craftsmanProfileEditor.errors.locationPermission);
         return;
       }
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       setLatitude(position.coords.latitude);
       setLongitude(position.coords.longitude);
     } catch {
-      setLocationError('Failed to get your location. Check your device location settings and try again.');
+      setLocationError(t.craftsmanProfileEditor.errors.locationFailed);
     } finally {
       setLocating(false);
     }
-  }, []);
+  }, [t]);
 
   const load = useCallback(() => {
     if (!user) return;
@@ -92,8 +94,8 @@ export function CraftsmanProfileEditor() {
           captureLocation();
         }
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Failed to load profile.'));
-  }, [user, captureLocation]);
+      .catch((err) => setError(apiErrorMessage(err, t, t.craftsmanProfileEditor.errors.failedToLoadProfile)));
+  }, [user, captureLocation, t]);
 
   useFocusEffect(load);
 
@@ -107,7 +109,7 @@ export function CraftsmanProfileEditor() {
   const submitSuggest = async () => {
     if (!token) return;
     if (newCategoryName.trim().length === 0) {
-      setSuggestError('Category name is required.');
+      setSuggestError(t.craftsmanProfileEditor.errors.categoryNameRequired);
       return;
     }
     setSuggestError(null);
@@ -120,9 +122,9 @@ export function CraftsmanProfileEditor() {
       setCategories((prev) => [...prev, created]);
       setCategoryId(created.id);
       setSuggestVisible(false);
-      setSuccess('Category submitted for admin approval — you can use it now, and it will be visible to others once approved.');
+      setSuccess(t.craftsmanProfileEditor.suggestDialog.successMessage);
     } catch (err) {
-      setSuggestError(err instanceof ApiError ? err.message : 'Failed to add category.');
+      setSuggestError(apiErrorMessage(err, t, t.craftsmanProfileEditor.errors.failedToAddCategory));
     } finally {
       setSuggesting(false);
     }
@@ -133,7 +135,7 @@ export function CraftsmanProfileEditor() {
     setError(null);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setError('Photo library permission is required to set a business photo.');
+      setError(t.craftsmanProfileEditor.errors.photoPermission);
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -148,7 +150,7 @@ export function CraftsmanProfileEditor() {
       await uploadMyPhoto(result.assets[0].uri, token);
       await refreshUser();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to update photo.');
+      setError(apiErrorMessage(err, t, t.craftsmanProfileEditor.errors.failedToUpdatePhoto));
     } finally {
       setUploadingPhoto(false);
     }
@@ -162,7 +164,7 @@ export function CraftsmanProfileEditor() {
       await removeMyPhoto(token);
       await refreshUser();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to remove photo.');
+      setError(apiErrorMessage(err, t, t.craftsmanProfileEditor.errors.failedToRemovePhoto));
     } finally {
       setUploadingPhoto(false);
     }
@@ -174,10 +176,11 @@ export function CraftsmanProfileEditor() {
   const parsedYears = yearsOfExperience.trim() ? Number(yearsOfExperience) : undefined;
 
   const validationError = (): string | null => {
-    if (categoryId === null) return 'Select a service category.';
-    if (hourlyRate.trim() === '' || Number.isNaN(parsedRate) || parsedRate < 0) return 'Enter a valid hourly rate.';
-    if (yearsOfExperience.trim() && Number.isNaN(parsedYears)) return 'Years of experience must be a number.';
-    if (latitude == null || longitude == null) return 'We need your location. Enable location access and try again.';
+    if (categoryId === null) return t.craftsmanProfileEditor.errors.categoryRequired;
+    if (hourlyRate.trim() === '' || Number.isNaN(parsedRate) || parsedRate < 0)
+      return t.craftsmanProfileEditor.errors.invalidHourlyRate;
+    if (yearsOfExperience.trim() && Number.isNaN(parsedYears)) return t.craftsmanProfileEditor.errors.yearsNotNumber;
+    if (latitude == null || longitude == null) return t.craftsmanProfileEditor.errors.locationRequired;
     return null;
   };
 
@@ -209,18 +212,18 @@ export function CraftsmanProfileEditor() {
       } else {
         await updateMyProfile(payload, token);
       }
-      setSuccess('Profile saved.');
+      setSuccess(t.craftsmanProfileEditor.profileSaved);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to save profile.');
+      setError(apiErrorMessage(err, t, t.craftsmanProfileEditor.errors.failedToSaveProfile));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <Text variant="titleLarge" style={styles.title}>
-        {mode === 'create' ? 'Set up your business' : 'Business Profile'}
+        {mode === 'create' ? t.craftsmanProfileEditor.titleCreate : t.craftsmanProfileEditor.titleEdit}
       </Text>
 
       <Pressable onPress={choosePhoto} disabled={uploadingPhoto}>
@@ -229,19 +232,19 @@ export function CraftsmanProfileEditor() {
             <Image source={{ uri: resolveMediaUrl(user.profileImageUrl) }} style={styles.photoImage} />
           ) : (
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              Add photo
+              {t.craftsmanProfileEditor.addPhoto}
             </Text>
           )}
         </View>
       </Pressable>
       {user.profileImageUrl && (
         <Button compact onPress={removePhoto} disabled={uploadingPhoto}>
-          Remove photo
+          {t.craftsmanProfileEditor.removePhoto}
         </Button>
       )}
 
       <Text variant="labelLarge" style={styles.fieldLabel}>
-        Business name
+        {t.craftsmanProfileEditor.businessName}
       </Text>
       <TextInput
         value={businessName}
@@ -251,7 +254,7 @@ export function CraftsmanProfileEditor() {
       />
 
       <Text variant="labelLarge" style={styles.fieldLabel}>
-        Service category
+        {t.craftsmanProfileEditor.serviceCategory}
       </Text>
       <View style={styles.chipRow}>
         {categories.map((category) => {
@@ -274,36 +277,36 @@ export function CraftsmanProfileEditor() {
         })}
       </View>
       <Button compact onPress={openSuggest}>
-        Can&apos;t find your trade? Add a new category
+        {t.craftsmanProfileEditor.addCategoryPrompt}
       </Button>
 
       <Text variant="labelLarge" style={styles.fieldLabel}>
-        Hourly rate
+        {t.craftsmanProfileEditor.hourlyRate}
       </Text>
       <TextInput value={hourlyRate} onChangeText={setHourlyRate} mode="outlined" keyboardType="decimal-pad" />
 
-      <TextInput label="Bio" value={bio} onChangeText={setBio} mode="outlined" multiline numberOfLines={3} />
+      <TextInput label={t.craftsmanProfileEditor.bioLabel} value={bio} onChangeText={setBio} mode="outlined" multiline numberOfLines={3} />
       <TextInput
-        label="Years of experience (optional)"
+        label={t.craftsmanProfileEditor.yearsOfExperienceLabel}
         value={yearsOfExperience}
         onChangeText={setYearsOfExperience}
         mode="outlined"
         keyboardType="number-pad"
       />
-      <TextInput label="Address (optional)" value={addressText} onChangeText={setAddressText} mode="outlined" />
+      <TextInput label={t.craftsmanProfileEditor.addressLabel} value={addressText} onChangeText={setAddressText} mode="outlined" />
 
       <Text variant="labelLarge" style={styles.fieldLabel}>
-        Service area
+        {t.craftsmanProfileEditor.serviceArea}
       </Text>
       <View style={[styles.areaPlaceholder, { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.outline }]}>
         <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
           {latitude != null && longitude != null
-            ? `Pinned at ${latitude.toFixed(3)}, ${longitude.toFixed(3)}`
-            : 'Location not pinned yet'}
+            ? t.craftsmanProfileEditor.pinnedAt(latitude.toFixed(3), longitude.toFixed(3))
+            : t.craftsmanProfileEditor.locationNotPinned}
         </Text>
       </View>
       <Button mode="outlined" onPress={captureLocation} loading={locating} disabled={locating}>
-        {latitude != null ? 'Refresh my location' : 'Use my current location'}
+        {latitude != null ? t.craftsmanProfileEditor.refreshLocation : t.craftsmanProfileEditor.useCurrentLocation}
       </Button>
       {locationError && <HelperText type="error">{locationError}</HelperText>}
 
@@ -311,20 +314,22 @@ export function CraftsmanProfileEditor() {
       {success && <HelperText type="info">{success}</HelperText>}
 
       <Button mode="contained" style={styles.saveButton} onPress={onSubmit} loading={submitting} disabled={submitting}>
-        {mode === 'create' ? 'Save & publish' : 'Save Changes'}
+        {mode === 'create' ? t.craftsmanProfileEditor.saveAndPublish : t.craftsmanProfileEditor.saveChanges}
       </Button>
 
       <Portal>
         <Dialog visible={suggestVisible} onDismiss={() => setSuggestVisible(false)}>
-          <Dialog.Title>Add a new category</Dialog.Title>
+          <Dialog.Title>{t.craftsmanProfileEditor.suggestDialog.title}</Dialog.Title>
           <Dialog.Content style={styles.suggestContent}>
-            <Text variant="bodySmall">
-              An admin will review this before it appears in the list for other users. You can use it for your own
-              profile right away.
-            </Text>
-            <TextInput label="Name" value={newCategoryName} onChangeText={setNewCategoryName} mode="outlined" />
+            <Text variant="bodySmall">{t.craftsmanProfileEditor.suggestDialog.body}</Text>
             <TextInput
-              label="Description (optional)"
+              label={t.craftsmanProfileEditor.suggestDialog.nameLabel}
+              value={newCategoryName}
+              onChangeText={setNewCategoryName}
+              mode="outlined"
+            />
+            <TextInput
+              label={t.craftsmanProfileEditor.suggestDialog.descriptionLabel}
               value={newCategoryDescription}
               onChangeText={setNewCategoryDescription}
               mode="outlined"
@@ -335,15 +340,15 @@ export function CraftsmanProfileEditor() {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setSuggestVisible(false)} disabled={suggesting}>
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button onPress={submitSuggest} loading={suggesting} disabled={suggesting}>
-              Add
+              {t.craftsmanProfileEditor.suggestDialog.add}
             </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
-    </View>
+    </ScrollView>
   );
 }
 

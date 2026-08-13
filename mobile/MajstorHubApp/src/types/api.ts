@@ -52,6 +52,7 @@ export interface CraftsmanProfileResponse {
   addressText?: string;
   isAvailable: boolean;
   isVerified: boolean;
+  viewCount: number;
   averageRating?: number;
   reviewCount: number;
   createdAt: string;
@@ -65,6 +66,7 @@ export interface BookingResponse {
   craftsmanProfileId: string;
   craftsmanName: string;
   craftsmanProfileImageUrl?: string;
+  serviceCategoryId: number;
   serviceCategoryName: string;
   description: string;
   address: string;
@@ -76,6 +78,7 @@ export interface BookingResponse {
   priceQuote?: number;
   createdAt: string;
   updatedAt: string;
+  hasReview: boolean;
 }
 
 export interface ReviewResponse {

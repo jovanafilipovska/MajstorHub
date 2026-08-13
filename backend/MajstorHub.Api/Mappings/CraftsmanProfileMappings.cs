@@ -23,6 +23,7 @@ public static class CraftsmanProfileMappings
             AddressText = profile.AddressText,
             IsAvailable = profile.IsAvailable,
             IsVerified = profile.IsVerified,
+            ViewCount = profile.ViewCount,
             AverageRating = averageRating,
             ReviewCount = reviewCount,
             CreatedAt = profile.CreatedAt

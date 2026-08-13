@@ -4,11 +4,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { IconButton, Text, useTheme } from 'react-native-paper';
 import { listFavorites, removeFavorite } from '../../api/favorites';
-import { ApiError } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { CraftsmanCard } from '../../components/CraftsmanCard';
+import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { ProfileStackParamList } from '../../navigation/types';
 import type { CraftsmanProfileResponse } from '../../types/api';
 
@@ -20,6 +20,7 @@ const GRID_GAP = 12;
 export function FavoritesScreen({ navigation }: Props) {
   const { token } = useAuth();
   const theme = useTheme();
+  const t = useTranslation();
   const { width } = useWindowDimensions();
   const cardWidth = (width - GRID_PADDING * 2 - GRID_GAP) / 2;
   const [favorites, setFavorites] = useState<CraftsmanProfileResponse[] | null>(null);
@@ -34,10 +35,10 @@ export function FavoritesScreen({ navigation }: Props) {
       .then(setFavorites)
       .catch((err) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        setError(err instanceof ApiError ? err.message : 'Failed to load favorites.');
+        setError(apiErrorMessage(err, t, t.favorites.failedToLoad));
       });
     return () => controller.abort();
-  }, [token]);
+  }, [token, t]);
 
   useFocusEffect(load);
 
@@ -48,7 +49,7 @@ export function FavoritesScreen({ navigation }: Props) {
       await removeFavorite(craftsmanUserId, token);
       setFavorites((prev) => prev?.filter((c) => c.userId !== craftsmanUserId) ?? null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to remove favorite.');
+      setError(apiErrorMessage(err, t, t.favorites.failedToRemove));
     } finally {
       setRemovingId(null);
     }
@@ -74,7 +75,7 @@ export function FavoritesScreen({ navigation }: Props) {
       numColumns={2}
       data={favorites}
       keyExtractor={(item) => item.userId}
-      ListEmptyComponent={<Text style={styles.empty}>No favorite pros yet.</Text>}
+      ListEmptyComponent={<Text style={styles.empty}>{t.favorites.empty}</Text>}
       renderItem={({ item }) => (
         <CraftsmanCard
           item={item}

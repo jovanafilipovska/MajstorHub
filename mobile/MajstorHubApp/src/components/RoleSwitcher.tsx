@@ -1,32 +1,20 @@
-import { StyleSheet } from 'react-native';
-import { Button } from 'react-native-paper';
+import { SegmentedButtons } from 'react-native-paper';
 import { useWorkMode } from '../contexts/WorkModeContext';
-
-const MODE_LABELS = { client: 'Customer', craftsman: 'Provider' } as const;
+import type { WorkMode } from '../contexts/WorkModeContext';
+import { useTranslation } from '../i18n';
 
 export function RoleSwitcher() {
   const { mode, setMode } = useWorkMode();
-  const nextMode = mode === 'client' ? 'craftsman' : 'client';
+  const t = useTranslation();
 
   return (
-    <Button
-      mode="outlined"
-      icon="swap-horizontal"
-      onPress={() => setMode(nextMode)}
-      style={styles.pill}
-      contentStyle={styles.pillContent}
-    >
-      {`${MODE_LABELS[mode]} mode ⇄ ${MODE_LABELS[nextMode]}`}
-    </Button>
+    <SegmentedButtons
+      value={mode}
+      onValueChange={(value) => setMode(value as WorkMode)}
+      buttons={[
+        { value: 'client', label: t.roleSwitcher.customer, icon: 'account' },
+        { value: 'craftsman', label: t.roleSwitcher.provider, icon: 'hammer-wrench' },
+      ]}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  pill: {
-    alignSelf: 'center',
-    borderRadius: 20,
-  },
-  pillContent: {
-    paddingHorizontal: 4,
-  },
-});

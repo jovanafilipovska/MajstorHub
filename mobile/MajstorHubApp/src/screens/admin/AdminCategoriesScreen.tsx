@@ -10,14 +10,15 @@ import {
   listServiceCategories,
   updateServiceCategory,
 } from '../../api/serviceCategories';
-import { ApiError } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
+import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { ServiceCategoryResponse } from '../../types/api';
 
 export function AdminCategoriesScreen() {
   const { token } = useAuth();
+  const t = useTranslation();
   const [categories, setCategories] = useState<ServiceCategoryResponse[] | null>(null);
   const [pending, setPending] = useState<ServiceCategoryResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -45,10 +46,10 @@ export function AdminCategoriesScreen() {
       })
       .catch((err) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        setError(err instanceof ApiError ? err.message : 'Failed to load categories.');
+        setError(apiErrorMessage(err, t, t.adminCategories.failedToLoad));
       });
     return () => controller.abort();
-  }, [token]);
+  }, [token, t]);
 
   useFocusEffect(load);
 
@@ -60,7 +61,7 @@ export function AdminCategoriesScreen() {
       await deleteServiceCategory(pendingDeleteId, token);
       setCategories((prev) => prev?.filter((c) => c.id !== pendingDeleteId) ?? null);
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : 'Failed to delete category.');
+      setActionError(apiErrorMessage(err, t, t.adminCategories.failedToDelete));
     } finally {
       setDeleting(false);
       setPendingDeleteId(null);
@@ -76,7 +77,7 @@ export function AdminCategoriesScreen() {
       setPending((prev) => prev.filter((c) => c.id !== id));
       setCategories((prev) => (prev ? [...prev, approved] : [approved]));
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : 'Failed to approve category.');
+      setActionError(apiErrorMessage(err, t, t.adminCategories.failedToApprove));
     } finally {
       setApprovingId(null);
     }
@@ -90,7 +91,7 @@ export function AdminCategoriesScreen() {
       await deleteServiceCategory(id, token);
       setPending((prev) => prev.filter((c) => c.id !== id));
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : 'Failed to reject category.');
+      setActionError(apiErrorMessage(err, t, t.adminCategories.failedToReject));
     } finally {
       setRejectingId(null);
     }
@@ -115,7 +116,7 @@ export function AdminCategoriesScreen() {
   const submitDialog = async () => {
     if (!token) return;
     if (name.trim().length === 0) {
-      setAddError('Category name is required.');
+      setAddError(t.adminCategories.categoryNameRequired);
       return;
     }
     setAddError(null);
@@ -131,7 +132,7 @@ export function AdminCategoriesScreen() {
       }
       setDialogVisible(false);
     } catch (err) {
-      setAddError(err instanceof ApiError ? err.message : 'Failed to save category.');
+      setAddError(apiErrorMessage(err, t, t.adminCategories.failedToSave));
     } finally {
       setSubmitting(false);
     }
@@ -155,7 +156,7 @@ export function AdminCategoriesScreen() {
         ListHeaderComponent={
           pending.length > 0 ? (
             <View style={styles.pendingSection}>
-              <Text variant="titleMedium">Pending approval</Text>
+              <Text variant="titleMedium">{t.adminCategories.pendingApproval}</Text>
               {pending.map((item) => (
                 <Card key={item.id} style={styles.card}>
                   <Card.Title title={item.name} subtitle={item.description} />
@@ -165,7 +166,7 @@ export function AdminCategoriesScreen() {
                       loading={rejectingId === item.id}
                       disabled={rejectingId === item.id || approvingId === item.id}
                     >
-                      Reject
+                      {t.adminCategories.reject}
                     </Button>
                     <Button
                       mode="contained"
@@ -173,18 +174,18 @@ export function AdminCategoriesScreen() {
                       loading={approvingId === item.id}
                       disabled={approvingId === item.id || rejectingId === item.id}
                     >
-                      Approve
+                      {t.adminCategories.approve}
                     </Button>
                   </Card.Actions>
                 </Card>
               ))}
               <Text variant="titleMedium" style={styles.approvedHeader}>
-                Categories
+                {t.adminCategories.categoriesHeader}
               </Text>
             </View>
           ) : null
         }
-        ListEmptyComponent={<Text style={styles.empty}>No categories yet.</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{t.adminCategories.empty}</Text>}
         renderItem={({ item }) => (
           <Card style={styles.card} onPress={() => openEdit(item)}>
             <Card.Title
@@ -198,33 +199,32 @@ export function AdminCategoriesScreen() {
         )}
       />
 
-      <FAB icon="plus" style={styles.fab} onPress={openAdd} label="Add Category" />
+      <FAB icon="plus" style={styles.fab} onPress={openAdd} label={t.adminCategories.addCategoryFab} />
 
       <Portal>
         <Dialog visible={pendingDeleteId !== null} onDismiss={() => setPendingDeleteId(null)}>
-          <Dialog.Title>Delete category?</Dialog.Title>
+          <Dialog.Title>{t.adminCategories.deleteDialog.title}</Dialog.Title>
           <Dialog.Content>
-            <Text variant="bodyMedium">
-              This cannot be undone. Craftsmen currently in this category will be unaffected unless you also remove
-              them.
-            </Text>
+            <Text variant="bodyMedium">{t.adminCategories.deleteDialog.body}</Text>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setPendingDeleteId(null)} disabled={deleting}>
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button onPress={confirmDelete} loading={deleting} disabled={deleting}>
-              Delete
+              {t.common.delete}
             </Button>
           </Dialog.Actions>
         </Dialog>
 
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <Dialog.Title>{editingId !== null ? 'Edit Category' : 'Add Category'}</Dialog.Title>
+          <Dialog.Title>
+            {editingId !== null ? t.adminCategories.editDialog.editTitle : t.adminCategories.editDialog.addTitle}
+          </Dialog.Title>
           <Dialog.Content style={styles.addContent}>
-            <TextInput label="Name" value={name} onChangeText={setName} mode="outlined" />
+            <TextInput label={t.adminCategories.editDialog.nameLabel} value={name} onChangeText={setName} mode="outlined" />
             <TextInput
-              label="Description (optional)"
+              label={t.adminCategories.editDialog.descriptionLabel}
               value={description}
               onChangeText={setDescription}
               mode="outlined"
@@ -235,10 +235,10 @@ export function AdminCategoriesScreen() {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setDialogVisible(false)} disabled={submitting}>
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button onPress={submitDialog} loading={submitting} disabled={submitting}>
-              {editingId !== null ? 'Save' : 'Add'}
+              {editingId !== null ? t.adminCategories.editDialog.save : t.adminCategories.editDialog.add}
             </Button>
           </Dialog.Actions>
         </Dialog>

@@ -5,12 +5,14 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar, Button, Dialog, HelperText, Icon, Portal, Text, useTheme } from 'react-native-paper';
 import { getBooking, updateBookingStatus } from '../../api/bookings';
-import { ApiError, resolveMediaUrl } from '../../api/client';
+import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { StatusBadge } from '../../components/StatusBadge';
 import { openDirections } from '../../utils/directions';
+import { apiErrorMessage, useTranslation } from '../../i18n';
+import type { Translations } from '../../i18n';
 import type { BookingsStackParamList } from '../../navigation/types';
 import type { BookingResponse, BookingStatus } from '../../types/api';
 
@@ -24,24 +26,25 @@ type Props = NativeStackScreenProps<BookingsStackParamList, 'BookingDetail'>;
 // is decided per-booking (booking.clientId/craftsmanProfileId vs. the viewer),
 // not from the viewer's account-level role.
 function getAvailableActions(
+  t: Translations,
   status: BookingStatus,
   isCraftsmanOnBooking: boolean,
   isClientOnBooking: boolean,
 ): { label: string; nextStatus: BookingStatus; primary: boolean }[] {
   if (status === 'Pending' && isCraftsmanOnBooking) {
     return [
-      { label: 'Reject', nextStatus: 'Rejected', primary: false },
-      { label: 'Accept', nextStatus: 'Accepted', primary: true },
+      { label: t.bookingDetail.reject, nextStatus: 'Rejected', primary: false },
+      { label: t.bookingDetail.accept, nextStatus: 'Accepted', primary: true },
     ];
   }
   if (status === 'Accepted' && isCraftsmanOnBooking) {
     return [
-      { label: 'Cancel', nextStatus: 'Cancelled', primary: false },
-      { label: 'Complete', nextStatus: 'Completed', primary: true },
+      { label: t.bookingDetail.cancel, nextStatus: 'Cancelled', primary: false },
+      { label: t.bookingDetail.complete, nextStatus: 'Completed', primary: true },
     ];
   }
   if (status === 'Accepted' && isClientOnBooking) {
-    return [{ label: 'Cancel Booking', nextStatus: 'Cancelled', primary: false }];
+    return [{ label: t.bookingDetail.cancelBooking, nextStatus: 'Cancelled', primary: false }];
   }
   return [];
 }
@@ -87,6 +90,7 @@ export function BookingDetailScreen({ route, navigation }: Props) {
   const { bookingId } = route.params;
   const { user, token } = useAuth();
   const theme = useTheme();
+  const t = useTranslation();
   const insets = useSafeAreaInsets();
   const [booking, setBooking] = useState<BookingResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -102,10 +106,10 @@ export function BookingDetailScreen({ route, navigation }: Props) {
       .then(setBooking)
       .catch((err) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        setError(err instanceof ApiError ? err.message : 'Failed to load booking.');
+        setError(apiErrorMessage(err, t, t.bookingDetail.failedToLoad));
       });
     return () => controller.abort();
-  }, [bookingId, token]);
+  }, [bookingId, token, t]);
 
   useFocusEffect(load);
 
@@ -117,7 +121,7 @@ export function BookingDetailScreen({ route, navigation }: Props) {
       const updated = await updateBookingStatus(bookingId, nextStatus, token);
       setBooking(updated);
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : 'Failed to update booking.');
+      setActionError(apiErrorMessage(err, t, t.bookingDetail.failedToUpdate));
     } finally {
       setSubmitting(false);
       setPendingAction(null);
@@ -129,8 +133,9 @@ export function BookingDetailScreen({ route, navigation }: Props) {
 
   const isCraftsmanOnBooking = booking.craftsmanProfileId === user?.id;
   const isClientOnBooking = booking.clientId === user?.id;
-  const actions = getAvailableActions(booking.status, isCraftsmanOnBooking, isClientOnBooking);
-  const canReview = isClientOnBooking && booking.status === 'Completed';
+  const actions = getAvailableActions(t, booking.status, isCraftsmanOnBooking, isClientOnBooking);
+  const canReview = isClientOnBooking && booking.status === 'Completed' && !booking.hasReview;
+  const showReviewedNotice = isClientOnBooking && booking.status === 'Completed' && booking.hasReview;
   const otherPartyName = isClientOnBooking ? booking.craftsmanName : booking.clientName;
   const otherPartyImageUrl = isClientOnBooking ? booking.craftsmanProfileImageUrl : booking.clientProfileImageUrl;
   const hasFooterActions = actions.length > 0 || canReview;
@@ -160,14 +165,18 @@ export function BookingDetailScreen({ route, navigation }: Props) {
         </View>
 
         <Text variant="titleMedium" style={styles.sectionTitle}>
-          Schedule
+          {t.bookingDetail.schedule}
         </Text>
         <View style={styles.rowGroup}>
           {booking.scheduledAt && (
-            <DetailRow icon="calendar-blank-outline" label="Date & time" value={formatDateTime(booking.scheduledAt)} />
+            <DetailRow
+              icon="calendar-blank-outline"
+              label={t.bookingDetail.dateTime}
+              value={formatDateTime(booking.scheduledAt)}
+            />
           )}
-          <DetailRow icon="map-marker-outline" label="Address" value={booking.address} />
-          <DetailRow icon="pound" label="Booking ID" value={shortBookingId(booking.id)} />
+          <DetailRow icon="map-marker-outline" label={t.bookingDetail.address} value={booking.address} />
+          <DetailRow icon="pound" label={t.bookingDetail.bookingId} value={shortBookingId(booking.id)} />
         </View>
 
         {isCraftsmanOnBooking && booking.latitude != null && booking.longitude != null && (
@@ -176,12 +185,12 @@ export function BookingDetailScreen({ route, navigation }: Props) {
             icon="directions"
             onPress={() => openDirections(booking.latitude, booking.longitude, booking.address)}
           >
-            Get Directions
+            {t.bookingDetail.getDirections}
           </Button>
         )}
 
         <Text variant="titleMedium" style={styles.sectionTitle}>
-          Job
+          {t.bookingDetail.job}
         </Text>
         <View style={[styles.jobCard, { backgroundColor: theme.colors.surfaceVariant }]}>
           <Text variant="bodyMedium">{booking.description}</Text>
@@ -198,10 +207,19 @@ export function BookingDetailScreen({ route, navigation }: Props) {
         {booking.priceQuote != null && (
           <View style={[styles.priceCard, { backgroundColor: theme.colors.primaryContainer }]}>
             <Text variant="titleMedium" style={{ color: theme.colors.onPrimaryContainer }}>
-              Total
+              {t.bookingDetail.total}
             </Text>
             <Text variant="titleLarge" style={{ color: theme.colors.onPrimaryContainer, fontWeight: '700' }}>
               ${booking.priceQuote.toFixed(2)}
+            </Text>
+          </View>
+        )}
+
+        {showReviewedNotice && (
+          <View style={[styles.reviewedNotice, { backgroundColor: theme.colors.surfaceVariant }]}>
+            <Icon source="check-circle-outline" size={18} color={theme.colors.onSurfaceVariant} />
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+              {t.bookingDetail.reviewSubmitted}
             </Text>
           </View>
         )}
@@ -251,7 +269,7 @@ export function BookingDetailScreen({ route, navigation }: Props) {
                 navigation.navigate('LeaveReview', { bookingId: booking.id, craftsmanName: booking.craftsmanName })
               }
             >
-              Leave a Review
+              {t.bookingDetail.leaveReviewButton}
             </Button>
           )}
         </View>
@@ -259,13 +277,13 @@ export function BookingDetailScreen({ route, navigation }: Props) {
 
       <Portal>
         <Dialog visible={pendingAction !== null} onDismiss={() => setPendingAction(null)}>
-          <Dialog.Title>{pendingAction?.label}?</Dialog.Title>
+          <Dialog.Title>{pendingAction && t.bookingDetail.questionSuffix(pendingAction.label)}</Dialog.Title>
           <Dialog.Content>
-            <Text variant="bodyMedium">This action cannot be undone.</Text>
+            <Text variant="bodyMedium">{t.bookingDetail.cannotBeUndone}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setPendingAction(null)}>Back</Button>
-            <Button onPress={() => pendingAction && applyStatus(pendingAction.nextStatus)}>Confirm</Button>
+            <Button onPress={() => setPendingAction(null)}>{t.common.back}</Button>
+            <Button onPress={() => pendingAction && applyStatus(pendingAction.nextStatus)}>{t.common.confirm}</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -332,6 +350,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  reviewedNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,

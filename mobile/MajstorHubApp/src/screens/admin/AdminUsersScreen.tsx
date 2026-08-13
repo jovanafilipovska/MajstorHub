@@ -4,16 +4,17 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Button, Card, Dialog, HelperText, IconButton, Portal, SegmentedButtons, Text } from 'react-native-paper';
 import { deleteUser, getAllUsers } from '../../api/users';
 import { listAllCraftsmen, verifyCraftsman } from '../../api/craftsmen';
-import { ApiError } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
+import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { CraftsmanProfileResponse, Role, UserResponse } from '../../types/api';
 
 type UserFilter = Extract<Role, 'Client' | 'Craftsman'>;
 
 export function AdminUsersScreen() {
   const { token } = useAuth();
+  const t = useTranslation();
   const [users, setUsers] = useState<UserResponse[] | null>(null);
   const [craftsmenById, setCraftsmenById] = useState<Record<string, CraftsmanProfileResponse>>({});
   const [filter, setFilter] = useState<UserFilter>('Client');
@@ -31,13 +32,13 @@ export function AdminUsersScreen() {
       .then(setUsers)
       .catch((err) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        setError(err instanceof ApiError ? err.message : 'Failed to load users.');
+        setError(apiErrorMessage(err, t, t.adminUsers.failedToLoad));
       });
     listAllCraftsmen()
       .then((list) => setCraftsmenById(Object.fromEntries(list.map((c) => [c.userId, c]))))
       .catch(() => {});
     return () => controller.abort();
-  }, [token]);
+  }, [token, t]);
 
   useFocusEffect(load);
 
@@ -49,7 +50,7 @@ export function AdminUsersScreen() {
       await deleteUser(pendingDeleteId, token);
       setUsers((prev) => prev?.filter((u) => u.id !== pendingDeleteId) ?? null);
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : 'Failed to delete user.');
+      setActionError(apiErrorMessage(err, t, t.adminUsers.failedToDelete));
     } finally {
       setDeleting(false);
       setPendingDeleteId(null);
@@ -64,7 +65,7 @@ export function AdminUsersScreen() {
       const updated = await verifyCraftsman(userId, nextVerified, token);
       setCraftsmenById((prev) => ({ ...prev, [userId]: updated }));
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : 'Failed to update verification.');
+      setActionError(apiErrorMessage(err, t, t.adminUsers.failedToUpdateVerification));
     } finally {
       setVerifyingId(null);
     }
@@ -82,8 +83,8 @@ export function AdminUsersScreen() {
           value={filter}
           onValueChange={(value) => setFilter(value as UserFilter)}
           buttons={[
-            { value: 'Client', label: 'Clients' },
-            { value: 'Craftsman', label: 'Craftsmen' },
+            { value: 'Client', label: t.adminUsers.clientsFilter },
+            { value: 'Craftsman', label: t.adminUsers.craftsmenFilter },
           ]}
         />
         {actionError && <HelperText type="error">{actionError}</HelperText>}
@@ -93,7 +94,9 @@ export function AdminUsersScreen() {
         contentContainerStyle={styles.list}
         data={filtered}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.empty}>No {filter === 'Client' ? 'clients' : 'craftsmen'} yet.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.empty}>{filter === 'Client' ? t.adminUsers.emptyClients : t.adminUsers.emptyCraftsmen}</Text>
+        }
         renderItem={({ item }) => {
           const craftsmanProfile = filter === 'Craftsman' ? craftsmenById[item.id] : undefined;
           return (
@@ -122,16 +125,16 @@ export function AdminUsersScreen() {
 
       <Portal>
         <Dialog visible={pendingDeleteId !== null} onDismiss={() => setPendingDeleteId(null)}>
-          <Dialog.Title>Delete user?</Dialog.Title>
+          <Dialog.Title>{t.adminUsers.deleteDialog.title}</Dialog.Title>
           <Dialog.Content>
-            <Text variant="bodyMedium">This will permanently remove this account. This cannot be undone.</Text>
+            <Text variant="bodyMedium">{t.adminUsers.deleteDialog.body}</Text>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setPendingDeleteId(null)} disabled={deleting}>
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button onPress={confirmDelete} loading={deleting} disabled={deleting}>
-              Delete
+              {t.common.delete}
             </Button>
           </Dialog.Actions>
         </Dialog>

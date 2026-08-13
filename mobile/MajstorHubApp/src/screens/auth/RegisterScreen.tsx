@@ -3,13 +3,14 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, HelperText, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
-import { ApiError } from '../../api/client';
+import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { AuthStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
 export function RegisterScreen({ navigation }: Props) {
   const { register } = useAuth();
+  const t = useTranslation();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -21,10 +22,10 @@ export function RegisterScreen({ navigation }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   const validationError = (): string | null => {
-    if (firstName.trim().length === 0) return 'First name is required.';
-    if (lastName.trim().length === 0) return 'Last name is required.';
-    if (!email.includes('@')) return 'Enter a valid email address.';
-    if (password.length < 8) return 'Password must be at least 8 characters.';
+    if (firstName.trim().length === 0) return t.auth.register.errors.firstNameRequired;
+    if (lastName.trim().length === 0) return t.auth.register.errors.lastNameRequired;
+    if (!email.includes('@')) return t.auth.register.errors.invalidEmail;
+    if (password.length < 8) return t.auth.register.errors.passwordTooShort;
     return null;
   };
 
@@ -46,7 +47,7 @@ export function RegisterScreen({ navigation }: Props) {
         role,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+      setError(apiErrorMessage(err, t, t.common.genericError));
     } finally {
       setSubmitting(false);
     }
@@ -55,14 +56,14 @@ export function RegisterScreen({ navigation }: Props) {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text variant="headlineMedium" style={styles.title}>
-        Create Account
+        {t.auth.register.title}
       </Text>
 
       <View style={styles.form}>
-        <TextInput label="First name" value={firstName} onChangeText={setFirstName} mode="outlined" />
-        <TextInput label="Last name" value={lastName} onChangeText={setLastName} mode="outlined" />
+        <TextInput label={t.auth.register.firstNameLabel} value={firstName} onChangeText={setFirstName} mode="outlined" />
+        <TextInput label={t.auth.register.lastNameLabel} value={lastName} onChangeText={setLastName} mode="outlined" />
         <TextInput
-          label="Email"
+          label={t.auth.register.emailLabel}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -70,7 +71,7 @@ export function RegisterScreen({ navigation }: Props) {
           mode="outlined"
         />
         <TextInput
-          label="Password"
+          label={t.auth.register.passwordLabel}
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!passwordVisible}
@@ -83,7 +84,7 @@ export function RegisterScreen({ navigation }: Props) {
           mode="outlined"
         />
         <TextInput
-          label="Phone number (optional)"
+          label={t.auth.register.phoneLabel}
           value={phoneNumber}
           onChangeText={setPhoneNumber}
           keyboardType="phone-pad"
@@ -94,18 +95,18 @@ export function RegisterScreen({ navigation }: Props) {
           value={role}
           onValueChange={(value) => setRole(value as 'Client' | 'Craftsman')}
           buttons={[
-            { value: 'Client', label: 'Client' },
-            { value: 'Craftsman', label: 'Craftsman' },
+            { value: 'Client', label: t.auth.register.roleClient },
+            { value: 'Craftsman', label: t.auth.register.roleCraftsman },
           ]}
         />
 
         {error && <HelperText type="error">{error}</HelperText>}
 
         <Button mode="contained" onPress={onSubmit} loading={submitting} disabled={submitting}>
-          Register
+          {t.auth.register.submit}
         </Button>
         <Button mode="text" onPress={() => navigation.navigate('Login')}>
-          Already have an account? Log in
+          {t.auth.register.haveAccount}
         </Button>
       </View>
     </ScrollView>

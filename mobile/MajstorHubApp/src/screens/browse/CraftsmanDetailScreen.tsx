@@ -4,12 +4,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar, Button, Card, Icon, IconButton, Text, useTheme } from 'react-native-paper';
-import { getCraftsmanProfile, getCraftsmanReviews } from '../../api/craftsmen';
+import { getCraftsmanProfile, getCraftsmanReviews, recordProfileView } from '../../api/craftsmen';
 import { addFavorite, listFavorites, removeFavorite } from '../../api/favorites';
-import { ApiError, resolveMediaUrl } from '../../api/client';
+import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
+import { apiErrorMessage, useTranslation } from '../../i18n';
 import { starRatingColor } from '../../theme';
 import type { BrowseStackParamList } from '../../navigation/types';
 import type { CraftsmanProfileResponse, ReviewResponse } from '../../types/api';
@@ -29,6 +30,7 @@ export function CraftsmanDetailScreen({ route, navigation }: Props) {
   const { craftsmanUserId } = route.params;
   const { user, token } = useAuth();
   const theme = useTheme();
+  const t = useTranslation();
   const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<CraftsmanProfileResponse | null>(null);
   const [reviews, setReviews] = useState<ReviewResponse[]>([]);
@@ -48,8 +50,10 @@ export function CraftsmanDetailScreen({ route, navigation }: Props) {
         setReviews(reviewsResult);
         setIsFavorited(favoritesResult.some((c) => c.userId === craftsmanUserId));
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Failed to load craftsman.'));
-  }, [craftsmanUserId, token]);
+      .catch((err) => setError(apiErrorMessage(err, t, t.craftsmanDetail.failedToLoad)));
+    // Popularity telemetry only - never block or fail the screen over it.
+    recordProfileView(craftsmanUserId).catch(() => {});
+  }, [craftsmanUserId, token, t]);
 
   useFocusEffect(load);
 
@@ -72,7 +76,7 @@ export function CraftsmanDetailScreen({ route, navigation }: Props) {
       }
       setIsFavorited((prev) => !prev);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to update favorite.');
+      setError(apiErrorMessage(err, t, t.craftsmanDetail.failedToUpdateFavorite));
     } finally {
       setFavoriting(false);
     }
@@ -119,7 +123,7 @@ export function CraftsmanDetailScreen({ route, navigation }: Props) {
               <View style={[styles.verifiedBadge, { backgroundColor: theme.colors.primaryContainer }]}>
                 <Icon source="check-decagram" size={14} color={theme.colors.onPrimaryContainer} />
                 <Text variant="labelSmall" style={{ color: theme.colors.onPrimaryContainer }}>
-                  Verified
+                  {t.craftsmanDetail.verified}
                 </Text>
               </View>
             )}
@@ -133,10 +137,8 @@ export function CraftsmanDetailScreen({ route, navigation }: Props) {
           <View style={styles.ratingRow}>
             <Icon source="star" size={16} color={goldColor} />
             <Text variant="bodyMedium" style={{ color: goldColor }}>
-              {profile.averageRating ? profile.averageRating.toFixed(1) : 'New'}
-              {profile.reviewCount > 0
-                ? ` · ${profile.reviewCount} review${profile.reviewCount === 1 ? '' : 's'}`
-                : ''}
+              {profile.averageRating ? profile.averageRating.toFixed(1) : t.craftsmanDetail.newBadge}
+              {profile.reviewCount > 0 ? ` · ${t.craftsmanDetail.reviewsLabel(profile.reviewCount)}` : ''}
             </Text>
           </View>
         </View>
@@ -144,7 +146,7 @@ export function CraftsmanDetailScreen({ route, navigation }: Props) {
         {profile.bio && (
           <View style={styles.section}>
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              About
+              {t.craftsmanDetail.about}
             </Text>
             <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
               {profile.bio}
@@ -154,19 +156,19 @@ export function CraftsmanDetailScreen({ route, navigation }: Props) {
 
         <View style={styles.section}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            Services &amp; rates
+            {t.craftsmanDetail.servicesAndRates}
           </Text>
           <View style={[styles.rateRow, { backgroundColor: theme.colors.surfaceVariant }]}>
-            <Text variant="bodyMedium">Hourly rate</Text>
+            <Text variant="bodyMedium">{t.craftsmanDetail.hourlyRate}</Text>
             <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
               ${profile.hourlyRate.toFixed(2)}/hr
             </Text>
           </View>
           {profile.yearsOfExperience != null && (
             <View style={[styles.rateRow, { backgroundColor: theme.colors.surfaceVariant }]}>
-              <Text variant="bodyMedium">Experience</Text>
+              <Text variant="bodyMedium">{t.craftsmanDetail.experience}</Text>
               <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                {profile.yearsOfExperience} year{profile.yearsOfExperience === 1 ? '' : 's'}
+                {t.craftsmanDetail.yearsLabel(profile.yearsOfExperience)}
               </Text>
             </View>
           )}
@@ -174,11 +176,11 @@ export function CraftsmanDetailScreen({ route, navigation }: Props) {
 
         <View style={styles.section}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            Reviews
+            {t.craftsmanDetail.reviews}
           </Text>
           {reviews.length === 0 && (
             <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-              No reviews yet.
+              {t.craftsmanDetail.noReviewsYet}
             </Text>
           )}
           {reviews.map((review) => (
@@ -237,7 +239,7 @@ export function CraftsmanDetailScreen({ route, navigation }: Props) {
               })
             }
           >
-            Book This Craftsman
+            {t.craftsmanDetail.bookButton}
           </Button>
         </View>
       )}

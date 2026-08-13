@@ -11,7 +11,8 @@ public class BookingRepository(MajstorHubDbContext context) : Repository<Booking
         DbSet
             .Include(b => b.Client)
             .Include(b => b.CraftsmanProfile).ThenInclude(c => c.User)
-            .Include(b => b.ServiceCategory);
+            .Include(b => b.ServiceCategory)
+            .Include(b => b.Review);
 
     public async Task<List<Booking>> GetByClientIdAsync(Guid clientId)
     {

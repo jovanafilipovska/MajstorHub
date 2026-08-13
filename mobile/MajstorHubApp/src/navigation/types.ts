@@ -25,13 +25,23 @@ export type ProfileStackParamList = {
   MyBookings: undefined;
   BookingDetail: { bookingId: string };
   LeaveReview: { bookingId: string; craftsmanName: string };
-  BusinessProfile: undefined;
+};
+
+export type DashboardStackParamList = {
+  Dashboard: undefined;
+  MyReviews: undefined;
+};
+
+export type SettingsStackParamList = {
+  Settings: undefined;
 };
 
 export type MainTabParamList = {
+  DashboardTab: NavigatorScreenParams<DashboardStackParamList>;
   BrowseTab: NavigatorScreenParams<BrowseStackParamList>;
   BookingsTab: NavigatorScreenParams<BookingsStackParamList>;
   ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
+  SettingsTab: NavigatorScreenParams<SettingsStackParamList>;
 };
 
 export type AdminUsersStackParamList = {

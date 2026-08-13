@@ -7,14 +7,14 @@ import * as Location from 'expo-location';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Button, HelperText, IconButton, Text, TextInput, useTheme } from 'react-native-paper';
 import { createBooking, uploadBookingPhotos } from '../../api/bookings';
-import { ApiError } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { apiErrorMessage, useTranslation } from '../../i18n';
+import type { Translations } from '../../i18n';
 import type { BrowseStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<BrowseStackParamList, 'CreateBooking'>;
 
 const MAX_PHOTOS = 6;
-const STEPS = ['Location', 'Details'] as const;
 
 function atTime(daysFromNow: number, hour: number): Date {
   const date = new Date();
@@ -23,18 +23,22 @@ function atTime(daysFromNow: number, hour: number): Date {
   return date;
 }
 
-const TIME_PRESETS: { label: string; getDate: () => Date }[] = [
-  { label: 'Today afternoon', getDate: () => atTime(0, 14) },
-  { label: 'Today evening', getDate: () => atTime(0, 18) },
-  { label: 'Tomorrow morning', getDate: () => atTime(1, 9) },
-  { label: 'Tomorrow afternoon', getDate: () => atTime(1, 14) },
-];
+function timePresets(t: Translations): { label: string; getDate: () => Date }[] {
+  return [
+    { label: t.createBooking.timePresets.todayAfternoon, getDate: () => atTime(0, 14) },
+    { label: t.createBooking.timePresets.todayEvening, getDate: () => atTime(0, 18) },
+    { label: t.createBooking.timePresets.tomorrowMorning, getDate: () => atTime(1, 9) },
+    { label: t.createBooking.timePresets.tomorrowAfternoon, getDate: () => atTime(1, 14) },
+  ];
+}
 
 export function CreateBookingScreen({ route, navigation }: Props) {
   const { craftsmanUserId, craftsmanName, serviceCategoryId } = route.params;
   const { token } = useAuth();
   const theme = useTheme();
+  const t = useTranslation();
   const insets = useSafeAreaInsets();
+  const TIME_PRESETS = timePresets(t);
 
   const [step, setStep] = useState(0);
 
@@ -58,7 +62,7 @@ export function CreateBookingScreen({ route, navigation }: Props) {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setLocationError('Location permission is required to pin your address on the map.');
+        setLocationError(t.createBooking.errors.locationPermission);
         return;
       }
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
@@ -72,16 +76,16 @@ export function CreateBookingScreen({ route, navigation }: Props) {
         setAddress([place.street, place.streetNumber, place.city].filter(Boolean).join(' '));
       }
     } catch {
-      setLocationError('Failed to get your location. Check your device location settings and try again.');
+      setLocationError(t.createBooking.errors.locationFailed);
     } finally {
       setLocating(false);
     }
-  }, [address]);
+  }, [address, t]);
 
   const pickPhotos = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setError('Photo library permission is required to attach photos.');
+      setError(t.createBooking.errors.photoPermission);
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -100,7 +104,7 @@ export function CreateBookingScreen({ route, navigation }: Props) {
 
   const goToDetails = () => {
     if (address.trim().length === 0) {
-      setError('Enter an address for the job.');
+      setError(t.createBooking.errors.addressRequired);
       return;
     }
     setError(null);
@@ -121,7 +125,7 @@ export function CreateBookingScreen({ route, navigation }: Props) {
   const onSubmit = async () => {
     if (!token) return;
     if (description.trim().length === 0) {
-      setError('Describe the problem.');
+      setError(t.createBooking.errors.describeRequired);
       return;
     }
     setError(null);
@@ -144,7 +148,7 @@ export function CreateBookingScreen({ route, navigation }: Props) {
       }
       navigation.popToTop();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to create booking.');
+      setError(apiErrorMessage(err, t, t.createBooking.errors.createFailed));
     } finally {
       setSubmitting(false);
     }
@@ -160,14 +164,14 @@ export function CreateBookingScreen({ route, navigation }: Props) {
           containerColor={theme.colors.surfaceVariant}
         />
         <Text variant="headlineSmall" style={styles.headerTitle}>
-          Request a booking
+          {t.createBooking.headerTitle}
         </Text>
       </View>
 
       <View style={styles.progressRow}>
-        {STEPS.map((label, index) => (
+        {[0, 1].map((index) => (
           <View
-            key={label}
+            key={index}
             style={[
               styles.progressSegment,
               { backgroundColor: index <= step ? theme.colors.primary : theme.colors.surfaceVariant },
@@ -179,44 +183,44 @@ export function CreateBookingScreen({ route, navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content}>
         {step === 0 ? (
           <>
-            <Text variant="titleMedium">Where's the job?</Text>
+            <Text variant="titleMedium">{t.createBooking.whereIsTheJob}</Text>
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              Booking with {craftsmanName}
+              {t.createBooking.bookingWith(craftsmanName)}
             </Text>
 
-            <TextInput label="Address" value={address} onChangeText={setAddress} mode="outlined" multiline />
+            <TextInput label={t.createBooking.addressLabel} value={address} onChangeText={setAddress} mode="outlined" multiline />
 
             <Button mode="outlined" onPress={captureLocation} loading={locating} disabled={locating} icon="crosshairs-gps">
-              {latitude != null ? 'Refresh pinned location' : 'Pin my current location'}
+              {latitude != null ? t.createBooking.refreshLocation : t.createBooking.pinLocation}
             </Button>
             {locationError && <HelperText type="error">{locationError}</HelperText>}
 
             {latitude != null && longitude != null && (
               <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                Location pinned: {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                {t.createBooking.locationPinned(latitude.toFixed(5), longitude.toFixed(5))}
               </Text>
             )}
 
             {error && <HelperText type="error">{error}</HelperText>}
 
             <Button mode="contained" style={styles.continueButton} onPress={goToDetails}>
-              Continue
+              {t.createBooking.continueButton}
             </Button>
           </>
         ) : (
           <>
-            <Text variant="titleMedium">Describe the problem</Text>
+            <Text variant="titleMedium">{t.createBooking.describeProblem}</Text>
             <TextInput
               value={description}
               onChangeText={setDescription}
               mode="outlined"
               multiline
               numberOfLines={4}
-              placeholder="What do you need done?"
+              placeholder={t.createBooking.descriptionPlaceholder}
             />
 
             <Text variant="titleMedium" style={styles.sectionSpacing}>
-              Photos
+              {t.createBooking.photos}
             </Text>
             <View style={styles.photoGrid}>
               {photos.map((uri) => (
@@ -239,7 +243,7 @@ export function CreateBookingScreen({ route, navigation }: Props) {
             </View>
 
             <Text variant="titleMedium" style={styles.sectionSpacing}>
-              Preferred time
+              {t.createBooking.preferredTime}
             </Text>
             <View style={styles.timeGrid}>
               {TIME_PRESETS.map((preset) => {
@@ -260,7 +264,7 @@ export function CreateBookingScreen({ route, navigation }: Props) {
             <Button compact onPress={() => setShowPicker(true)}>
               {scheduledAt && !TIME_PRESETS.some((p) => p.getDate().getTime() === scheduledAt.getTime())
                 ? scheduledAt.toLocaleString()
-                : 'Choose a specific date & time'}
+                : t.createBooking.chooseDateTime}
             </Button>
             {showPicker && (
               <DateTimePicker
@@ -283,7 +287,7 @@ export function CreateBookingScreen({ route, navigation }: Props) {
               loading={submitting}
               disabled={!canSubmit}
             >
-              Confirm Booking
+              {t.createBooking.confirmBooking}
             </Button>
           </>
         )}
