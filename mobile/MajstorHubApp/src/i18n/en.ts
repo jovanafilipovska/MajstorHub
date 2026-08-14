@@ -11,6 +11,7 @@ export const en = {
     delete: 'Delete',
     add: 'Add',
     back: 'Back',
+    menu: 'Menu',
     logOut: 'Log out',
     genericError: 'Something went wrong. Please try again.',
   },

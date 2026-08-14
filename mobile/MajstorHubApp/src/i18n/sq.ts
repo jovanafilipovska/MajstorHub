@@ -10,6 +10,7 @@ export const sq: Translations = {
     delete: 'Fshi',
     add: 'Shto',
     back: 'Prapa',
+    menu: 'Menyja',
     logOut: 'Dilni',
     genericError: 'Diçka shkoi keq. Ju lutemi provoni përsëri.',
   },

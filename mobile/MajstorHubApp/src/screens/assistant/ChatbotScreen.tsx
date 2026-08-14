@@ -11,6 +11,7 @@ import { useWorkMode } from '../../contexts/WorkModeContext';
 import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
+import { HamburgerButton } from '../../components/HamburgerButton';
 import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { AssistantStackParamList } from '../../navigation/types';
 import type { ChatbotMessageResponse, ChatbotMode } from '../../types/api';
@@ -115,7 +116,10 @@ export function ChatbotScreen({ navigation }: Props) {
   if (unavailable) {
     return (
       <View style={[styles.emptyState, { backgroundColor: theme.colors.background, paddingTop: insets.top + 24 }]}>
-        <Text variant="titleMedium">{t.assistant.title}</Text>
+        <View style={styles.emptyStateHeader}>
+          <Text variant="titleMedium">{t.assistant.title}</Text>
+          <HamburgerButton />
+        </View>
         <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
           {t.assistant.craftsmanProfileRequired}
         </Text>
@@ -143,7 +147,10 @@ export function ChatbotScreen({ navigation }: Props) {
     >
       <View style={[styles.header, { paddingTop: insets.top + 12, borderBottomColor: theme.colors.outlineVariant }]}>
         <Text variant="titleLarge">{t.assistant.title}</Text>
-        <IconButton icon="refresh" onPress={() => setResetVisible(true)} disabled={messages.length === 0} />
+        <View style={styles.headerActions}>
+          <IconButton icon="refresh" onPress={() => setResetVisible(true)} disabled={messages.length === 0} />
+          <HamburgerButton />
+        </View>
       </View>
 
       <FlatList
@@ -230,6 +237,10 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   list: {
     flex: 1,
   },
@@ -275,5 +286,11 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: 'flex-start',
     padding: 16,
+  },
+  emptyStateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
   },
 });

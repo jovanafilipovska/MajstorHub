@@ -13,6 +13,7 @@ import {
 import { AuthProvider } from './src/contexts/AuthContext';
 import { ChatProvider } from './src/contexts/ChatContext';
 import { WorkModeProvider } from './src/contexts/WorkModeContext';
+import { DrawerProvider } from './src/contexts/DrawerContext';
 import { ThemeProvider, useThemeMode } from './src/contexts/ThemeContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
@@ -45,7 +46,9 @@ function AppShell() {
         <ChatProvider>
           <WorkModeProvider>
             <NavigationContainer ref={navigationRef} theme={mode === 'dark' ? navDarkTheme : navLightTheme}>
-              <RootNavigator />
+              <DrawerProvider>
+                <RootNavigator />
+              </DrawerProvider>
             </NavigationContainer>
           </WorkModeProvider>
         </ChatProvider>

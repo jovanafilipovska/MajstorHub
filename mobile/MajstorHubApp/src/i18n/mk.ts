@@ -10,6 +10,7 @@ export const mk: Translations = {
     delete: 'Избриши',
     add: 'Додади',
     back: 'Назад',
+    menu: 'Мени',
     logOut: 'Одјави се',
     genericError: 'Настана грешка. Обидете се повторно.',
   },

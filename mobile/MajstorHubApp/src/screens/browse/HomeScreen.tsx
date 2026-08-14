@@ -16,6 +16,7 @@ import { distanceKm } from '../../utils/geo';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { CraftsmanCard } from '../../components/CraftsmanCard';
+import { HamburgerButton } from '../../components/HamburgerButton';
 import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { BrowseStackParamList } from '../../navigation/types';
 import type { BookingResponse, CraftsmanProfileResponse, ServiceCategoryResponse } from '../../types/api';
@@ -265,6 +266,7 @@ export function HomeScreen({ navigation }: Props) {
                 />
               )}
             </Pressable>
+            <HamburgerButton />
           </View>
         </View>
 
