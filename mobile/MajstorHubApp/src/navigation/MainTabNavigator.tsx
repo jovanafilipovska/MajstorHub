@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { DashboardStackNavigator } from './DashboardStackNavigator';
 import { BrowseStackNavigator } from './BrowseStackNavigator';
 import { BookingsStackNavigator } from './BookingsStackNavigator';
+import { AssistantStackNavigator } from './AssistantStackNavigator';
 import { ProfileStackNavigator } from './ProfileStackNavigator';
 import { CraftsmanProfileStackNavigator } from './CraftsmanProfileStackNavigator';
 import { SettingsStackNavigator } from './SettingsStackNavigator';
@@ -70,6 +71,16 @@ export function MainTabNavigator() {
           }}
         />
       )}
+      <Tab.Screen
+        name="AssistantTab"
+        component={AssistantStackNavigator}
+        options={{
+          title: t.nav.assistant,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="robot-outline" color={color} size={size} />
+          ),
+        }}
+      />
       <Tab.Screen
         name="MessagesTab"
         component={MessagesStackNavigator}

@@ -123,6 +123,27 @@ export interface ConversationSummaryResponse {
   unreadCount: number;
 }
 
+export type ChatbotMode = 'Client' | 'Craftsman';
+export type ChatbotMessageRole = 'User' | 'Assistant';
+
+export interface ChatbotMessageResponse {
+  id: string;
+  role: ChatbotMessageRole;
+  content: string;
+  createdAt: string;
+}
+
+export interface ChatbotConversationResponse {
+  messages: ChatbotMessageResponse[];
+}
+
+export interface SendChatbotMessageRequest {
+  mode: ChatbotMode;
+  message: string;
+  latitude?: number;
+  longitude?: number;
+}
+
 export interface RegisterRequest {
   firstName: string;
   lastName: string;

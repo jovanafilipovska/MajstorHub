@@ -40,6 +40,7 @@ export const sq: Translations = {
     browse: 'Shfleto',
     dashboard: 'Paneli',
     bookings: 'Rezervime',
+    assistant: 'Asistenti',
     messages: 'Mesazhet',
     profile: 'Profili',
     settings: 'Cilësimet',
@@ -325,6 +326,23 @@ export const sq: Translations = {
   myReviews: {
     noReviewsYet: 'Ende pa vlerësime.',
     failedToLoad: 'Dështoi ngarkimi i vlerësimeve.',
+  },
+  assistant: {
+    title: 'Asistenti',
+    clientGreeting:
+      'Më thuaj çfarë duhet riparuar dhe përafërsisht ku ndodhesh, dhe do të gjej mjeshtër për ty dhe do të vlerësoj koston.',
+    craftsmanGreeting: 'Më pyet për vlerësimin dhe rezervimet e tua, vlerësimet e fundit, ose ndihmë për çmimin e një pune.',
+    composePlaceholder: 'Pyet asistentin…',
+    thinking: 'Duke menduar…',
+    newChat: 'Bisedë e re',
+    newChatDialog: {
+      title: 'Të fillojmë një bisedë të re?',
+      body: 'Kjo fshin bisedën tënde aktuale me asistentin. Kjo nuk mund të kthehet.',
+    },
+    failedToLoad: 'Dështoi ngarkimi i bisedës.',
+    failedToSend: 'Dështoi dërgimi i mesazhit tënd.',
+    failedToReset: 'Dështoi fillimi i një bisede të re.',
+    craftsmanProfileRequired: 'Krijo profilin tënd të mjeshtrit për të përdorur asistentin e biznesit.',
   },
   roleSwitcher: {
     customer: 'Klient',

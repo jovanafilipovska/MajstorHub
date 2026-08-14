@@ -44,6 +44,7 @@ export const en = {
     browse: 'Browse',
     dashboard: 'Dashboard',
     bookings: 'Bookings',
+    assistant: 'Assistant',
     messages: 'Messages',
     profile: 'Profile',
     settings: 'Settings',
@@ -329,6 +330,23 @@ export const en = {
       title: 'Delete conversation?',
       body: 'This permanently deletes this conversation for both you and the other person. This cannot be undone.',
     },
+  },
+  assistant: {
+    title: 'Assistant',
+    clientGreeting:
+      "Tell me what needs fixing and roughly where you are, and I'll find craftsmen for you and estimate the cost.",
+    craftsmanGreeting: 'Ask me about your rating and bookings, your recent reviews, or get help pricing a job.',
+    composePlaceholder: 'Ask the assistant…',
+    thinking: 'Thinking…',
+    newChat: 'New chat',
+    newChatDialog: {
+      title: 'Start a new chat?',
+      body: 'This clears your current conversation with the assistant. This cannot be undone.',
+    },
+    failedToLoad: 'Failed to load the conversation.',
+    failedToSend: 'Failed to send your message.',
+    failedToReset: 'Failed to start a new chat.',
+    craftsmanProfileRequired: 'Set up your craftsman profile to use the business assistant.',
   },
   roleSwitcher: {
     customer: 'Customer',

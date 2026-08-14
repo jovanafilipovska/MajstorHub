@@ -39,6 +39,10 @@ export type MessagesStackParamList = {
   Chat: { bookingId: string; otherPartyName: string };
 };
 
+export type AssistantStackParamList = {
+  Chatbot: undefined;
+};
+
 export type SettingsStackParamList = {
   Settings: undefined;
 };
@@ -47,6 +51,7 @@ export type MainTabParamList = {
   DashboardTab: NavigatorScreenParams<DashboardStackParamList>;
   BrowseTab: NavigatorScreenParams<BrowseStackParamList>;
   BookingsTab: NavigatorScreenParams<BookingsStackParamList>;
+  AssistantTab: NavigatorScreenParams<AssistantStackParamList>;
   MessagesTab: NavigatorScreenParams<MessagesStackParamList>;
   ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
   SettingsTab: NavigatorScreenParams<SettingsStackParamList>;

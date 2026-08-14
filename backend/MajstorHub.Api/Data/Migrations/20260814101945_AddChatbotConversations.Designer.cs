@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using MajstorHub.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -13,9 +14,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MajstorHub.Api.Data.Migrations
 {
     [DbContext(typeof(MajstorHubDbContext))]
-    partial class MajstorHubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260814101945_AddChatbotConversations")]
+    partial class AddChatbotConversations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

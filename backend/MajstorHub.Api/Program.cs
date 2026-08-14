@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using MajstorHub.Api.Ai;
 using MajstorHub.Api.Configuration;
 using MajstorHub.Api.Data;
 using MajstorHub.Api.Hubs;
@@ -7,6 +8,7 @@ using MajstorHub.Api.Middleware;
 using MajstorHub.Api.Repositories;
 using MajstorHub.Api.Repositories.Interfaces;
 using MajstorHub.Api.Services;
+using MajstorHub.Api.Services.Chatbot;
 using MajstorHub.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.FileProviders;
@@ -29,6 +31,8 @@ builder.Services.AddDbContext<MajstorHubDbContext>(options =>
         npgsqlOptions => npgsqlOptions.UseNetTopologySuite()));
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+builder.Services.Configure<GroqSettings>(builder.Configuration.GetSection("Groq"));
+builder.Services.AddHttpClient<IGroqClient, GroqClient>();
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt configuration section is missing.");
 
@@ -72,6 +76,7 @@ builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+builder.Services.AddScoped<IChatbotRepository, ChatbotRepository>();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -82,6 +87,8 @@ builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<IChatbotToolService, ChatbotToolService>();
+builder.Services.AddScoped<IChatbotService, ChatbotService>();
 
 var app = builder.Build();
 

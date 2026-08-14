@@ -16,6 +16,8 @@ public class MajstorHubDbContext : DbContext
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<Message> Messages => Set<Message>();
+    public DbSet<ChatbotConversation> ChatbotConversations => Set<ChatbotConversation>();
+    public DbSet<ChatbotMessage> ChatbotMessages => Set<ChatbotMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,6 +32,7 @@ public class MajstorHubDbContext : DbContext
         ConfigureReview(modelBuilder);
         ConfigureFavorite(modelBuilder);
         ConfigureMessage(modelBuilder);
+        ConfigureChatbot(modelBuilder);
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
@@ -183,6 +186,32 @@ public class MajstorHubDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(m => m.SenderId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureChatbot(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ChatbotConversation>(entity =>
+        {
+            entity.Property(c => c.Mode).HasConversion<string>().HasMaxLength(20);
+            entity.HasIndex(c => new { c.UserId, c.Mode }).IsUnique();
+
+            entity.HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChatbotMessage>(entity =>
+        {
+            entity.Property(m => m.Role).HasConversion<string>().HasMaxLength(20);
+            entity.Property(m => m.Content).HasMaxLength(4000).IsRequired();
+            entity.HasIndex(m => new { m.ConversationId, m.CreatedAt });
+
+            entity.HasOne(m => m.Conversation)
+                .WithMany(c => c.Messages)
+                .HasForeignKey(m => m.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

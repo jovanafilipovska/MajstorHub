@@ -1,5 +1,6 @@
 using MajstorHub.Api.Data;
 using MajstorHub.Api.Models;
+using MajstorHub.Api.Models.Enums;
 using MajstorHub.Api.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,5 +28,14 @@ public class BookingRepository(MajstorHubDbContext context) : Repository<Booking
     public async Task<Booking?> GetByIdWithDetailsAsync(Guid id)
     {
         return await WithDetails().FirstOrDefaultAsync(b => b.Id == id);
+    }
+
+    public async Task<List<Booking>> GetCompletedByCategoryAsync(int serviceCategoryId)
+    {
+        return await DbSet
+            .Where(b => b.ServiceCategoryId == serviceCategoryId
+                && b.Status == BookingStatus.Completed
+                && b.PriceQuote != null)
+            .ToListAsync();
     }
 }

@@ -40,6 +40,7 @@ export const mk: Translations = {
     browse: 'Пребарај',
     dashboard: 'Контролна табла',
     bookings: 'Резервации',
+    assistant: 'Асистент',
     messages: 'Пораки',
     profile: 'Профил',
     settings: 'Поставки',
@@ -325,6 +326,23 @@ export const mk: Translations = {
   myReviews: {
     noReviewsYet: 'Сеуште нема рецензии.',
     failedToLoad: 'Неуспешно вчитување на рецензиите.',
+  },
+  assistant: {
+    title: 'Асистент',
+    clientGreeting:
+      'Кажи ми што треба да се поправи и приближно каде се наоѓаш, и ќе ти најдам мајстори и ќе проценам цена.',
+    craftsmanGreeting: 'Прашај ме за твојата оценка и резервации, последните рецензии, или помош за цена на работа.',
+    composePlaceholder: 'Прашај го асистентот…',
+    thinking: 'Размислувам…',
+    newChat: 'Нов разговор',
+    newChatDialog: {
+      title: 'Да се започне нов разговор?',
+      body: 'Ова го брише твојот тековен разговор со асистентот. Ова не може да се врати.',
+    },
+    failedToLoad: 'Неуспешно вчитување на разговорот.',
+    failedToSend: 'Неуспешно испраќање на пораката.',
+    failedToReset: 'Неуспешно започнување нов разговор.',
+    craftsmanProfileRequired: 'Постави го твојот профил на мајстор за да го користиш бизнис асистентот.',
   },
   roleSwitcher: {
     customer: 'Клиент',
