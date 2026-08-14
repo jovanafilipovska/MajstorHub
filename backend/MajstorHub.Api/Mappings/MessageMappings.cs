@@ -13,7 +13,9 @@ public static class MessageMappings
             BookingId = message.BookingId,
             SenderId = message.SenderId,
             SenderName = message.Sender.FullName,
+            SenderProfileImageUrl = message.Sender.ProfileImageUrl,
             Body = message.Body,
+            PhotoUrl = message.PhotoUrl,
             CreatedAt = message.CreatedAt,
             ReadAt = message.ReadAt
         };

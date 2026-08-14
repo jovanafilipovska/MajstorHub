@@ -311,6 +311,16 @@ export const sq: Translations = {
     failedToLoadHistory: 'Dështoi ngarkimi i mesazheve.',
     composePlaceholder: 'Shkruani një mesazh',
     failedToSend: 'Dështoi dërgimi i mesazhit.',
+    youPrefix: 'Ti: ',
+    photoPreview: '📷 Foto',
+    photoPermission: 'Kërkohet leje për bibliotekën e fotove për të bashkangjitur një foto.',
+    failedToUploadPhoto: 'Dështoi dërgimi i fotos.',
+    seen: 'Parë',
+    failedToDeleteConversation: 'Dështoi fshirja e bisedës.',
+    deleteDialog: {
+      title: 'Fshi bisedën?',
+      body: 'Kjo e fshin përgjithmonë këtë bisedë për ju dhe personin tjetër. Kjo nuk mund të zhbëhet.',
+    },
   },
   myReviews: {
     noReviewsYet: 'Ende pa vlerësime.',

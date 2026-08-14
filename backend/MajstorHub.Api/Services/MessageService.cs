@@ -5,6 +5,8 @@ using MajstorHub.Api.Mappings;
 using MajstorHub.Api.Models;
 using MajstorHub.Api.Repositories.Interfaces;
 using MajstorHub.Api.Services.Interfaces;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 
 namespace MajstorHub.Api.Services;
@@ -12,8 +14,11 @@ namespace MajstorHub.Api.Services;
 public class MessageService(
     IMessageRepository messageRepository,
     IBookingRepository bookingRepository,
-    IHubContext<ChatHub> hubContext) : IMessageService
+    IHubContext<ChatHub> hubContext,
+    IWebHostEnvironment webHostEnvironment) : IMessageService
 {
+    private static readonly string[] AllowedImageExtensions = [".jpg", ".jpeg", ".png"];
+
     public async Task<MessageResponse> SendAsync(Guid senderId, SendMessageRequest request)
     {
         var booking = await bookingRepository.GetByIdWithDetailsAsync(request.BookingId)
@@ -30,6 +35,55 @@ public class MessageService(
             BookingId = booking.Id,
             SenderId = senderId,
             Body = request.Body,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+
+        await messageRepository.AddAsync(message);
+        await messageRepository.SaveChangesAsync();
+
+        message.Sender = senderId == booking.ClientId ? booking.Client : booking.CraftsmanProfile.User;
+        var response = message.ToResponse();
+
+        var recipientId = senderId == booking.ClientId ? booking.CraftsmanProfileId : booking.ClientId;
+        await hubContext.Clients.User(recipientId.ToString()).SendAsync("ReceiveMessage", response);
+        await hubContext.Clients.User(senderId.ToString()).SendAsync("ReceiveMessage", response);
+
+        return response;
+    }
+
+    public async Task<MessageResponse> SendPhotoAsync(Guid senderId, Guid bookingId, IFormFile file)
+    {
+        var booking = await bookingRepository.GetByIdWithDetailsAsync(bookingId)
+            ?? throw new NotFoundException($"Booking '{bookingId}' was not found.");
+
+        if (senderId != booking.ClientId && senderId != booking.CraftsmanProfileId)
+        {
+            throw new ForbiddenException("You are not a participant in this booking.");
+        }
+
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!AllowedImageExtensions.Contains(extension))
+        {
+            throw new ValidationException("Only JPG and PNG images are supported.");
+        }
+
+        var uploadsPath = Path.Combine(webHostEnvironment.ContentRootPath, "Uploads", "messages", bookingId.ToString());
+        Directory.CreateDirectory(uploadsPath);
+
+        var fileName = $"{Guid.NewGuid()}{extension}";
+        var filePath = Path.Combine(uploadsPath, fileName);
+
+        await using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            BookingId = booking.Id,
+            SenderId = senderId,
+            PhotoUrl = $"/uploads/messages/{bookingId}/{fileName}",
             CreatedAt = DateTimeOffset.UtcNow
         };
 
@@ -79,8 +133,10 @@ public class MessageService(
                 OtherPartyId = isClient ? booking.CraftsmanProfileId : booking.ClientId,
                 OtherPartyName = isClient ? booking.CraftsmanProfile.User.FullName : booking.Client.FullName,
                 OtherPartyProfileImageUrl = isClient ? booking.CraftsmanProfile.User.ProfileImageUrl : booking.Client.ProfileImageUrl,
-                LastMessagePreview = last.Body.Length > 80 ? last.Body[..80] + "…" : last.Body,
+                LastMessagePreview = last.Body != null && last.Body.Length > 80 ? last.Body[..80] + "…" : last.Body,
                 LastMessageAt = last.CreatedAt,
+                LastMessageSenderId = last.SenderId,
+                LastMessageIsPhoto = last.PhotoUrl != null,
                 UnreadCount = unread
             });
         }
@@ -90,8 +146,24 @@ public class MessageService(
 
     public async Task MarkReadAsync(Guid bookingId, Guid requestingUserId)
     {
-        await GetOwnedBookingAsync(bookingId, requestingUserId);
-        await messageRepository.MarkAllReadAsync(bookingId, requestingUserId);
+        var booking = await GetOwnedBookingAsync(bookingId, requestingUserId);
+        var markedCount = await messageRepository.MarkAllReadAsync(bookingId, requestingUserId);
+
+        if (markedCount > 0)
+        {
+            var otherPartyId = requestingUserId == booking.ClientId ? booking.CraftsmanProfileId : booking.ClientId;
+            await hubContext.Clients.User(otherPartyId.ToString())
+                .SendAsync("MessagesRead", new { bookingId, readAt = DateTimeOffset.UtcNow });
+        }
+    }
+
+    public async Task DeleteConversationAsync(Guid bookingId, Guid requestingUserId)
+    {
+        var booking = await GetOwnedBookingAsync(bookingId, requestingUserId);
+        await messageRepository.DeleteAllForBookingAsync(bookingId);
+
+        var otherPartyId = requestingUserId == booking.ClientId ? booking.CraftsmanProfileId : booking.ClientId;
+        await hubContext.Clients.User(otherPartyId.ToString()).SendAsync("ConversationDeleted", new { bookingId });
     }
 
     private async Task<Booking> GetOwnedBookingAsync(Guid bookingId, Guid requestingUserId)

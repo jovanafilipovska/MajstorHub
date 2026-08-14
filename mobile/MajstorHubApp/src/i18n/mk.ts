@@ -311,6 +311,16 @@ export const mk: Translations = {
     failedToLoadHistory: 'Неуспешно вчитување на пораките.',
     composePlaceholder: 'Напиши порака',
     failedToSend: 'Неуспешно испраќање на пораката.',
+    youPrefix: 'Ти: ',
+    photoPreview: '📷 Фотографија',
+    photoPermission: 'Потребна е дозвола за пристап до фотографии за да прикачите слика.',
+    failedToUploadPhoto: 'Неуспешно испраќање на фотографијата.',
+    seen: 'Прочитано',
+    failedToDeleteConversation: 'Неуспешно бришење на разговорот.',
+    deleteDialog: {
+      title: 'Избриши разговор?',
+      body: 'Ова трајно го брише разговорот за вас и за другото лице. Ова не може да се врати.',
+    },
   },
   myReviews: {
     noReviewsYet: 'Сеуште нема рецензии.',

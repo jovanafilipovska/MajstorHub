@@ -11,6 +11,7 @@ import {
   updateServiceCategory,
 } from '../../api/serviceCategories';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { apiErrorMessage, useTranslation } from '../../i18n';
@@ -34,6 +35,9 @@ export function AdminCategoriesScreen() {
   const [description, setDescription] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useAutoDismiss(actionError, setActionError);
+  useAutoDismiss(addError, setAddError);
 
   const load = useCallback(() => {
     if (!token) return;

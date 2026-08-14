@@ -7,6 +7,7 @@ import { Avatar, Button, Dialog, HelperText, Icon, Portal, Text, useTheme } from
 import { getBooking, updateBookingStatus } from '../../api/bookings';
 import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -97,6 +98,8 @@ export function BookingDetailScreen({ route, navigation }: Props) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [pendingAction, setPendingAction] = useState<{ label: string; nextStatus: BookingStatus } | null>(null);
+
+  useAutoDismiss(actionError, setActionError);
 
   const load = useCallback(() => {
     if (!token) return;

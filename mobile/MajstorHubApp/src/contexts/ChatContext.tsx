@@ -7,6 +7,15 @@ import { getConversations } from '../api/messages';
 import { useAuth } from './AuthContext';
 import type { MessageResponse } from '../types/api';
 
+export interface ReadReceiptPayload {
+  bookingId: string;
+  readAt: string;
+}
+
+export interface ConversationDeletedPayload {
+  bookingId: string;
+}
+
 interface ChatContextValue {
   connection: HubConnection | null;
   unreadByBooking: Record<string, number>;
@@ -14,6 +23,8 @@ interface ChatContextValue {
   refreshUnread: () => Promise<void>;
   clearUnread: (bookingId: string) => void;
   subscribe: (handler: (message: MessageResponse) => void) => () => void;
+  subscribeToReadReceipts: (handler: (receipt: ReadReceiptPayload) => void) => () => void;
+  subscribeToConversationDeleted: (handler: (payload: ConversationDeletedPayload) => void) => () => void;
 }
 
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
@@ -23,6 +34,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [connection, setConnection] = useState<HubConnection | null>(null);
   const [unreadByBooking, setUnreadByBooking] = useState<Record<string, number>>({});
   const listenersRef = useRef(new Set<(message: MessageResponse) => void>());
+  const readReceiptListenersRef = useRef(new Set<(receipt: ReadReceiptPayload) => void>());
+  const conversationDeletedListenersRef = useRef(new Set<(payload: ConversationDeletedPayload) => void>());
 
   const refreshUnread = useCallback(async () => {
     if (!token) return;
@@ -59,6 +72,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    hub.on('MessagesRead', (receipt: ReadReceiptPayload) => {
+      readReceiptListenersRef.current.forEach((fn) => fn(receipt));
+    });
+
+    hub.on('ConversationDeleted', (payload: ConversationDeletedPayload) => {
+      conversationDeletedListenersRef.current.forEach((fn) => fn(payload));
+      setUnreadByBooking((prev) => {
+        if (!(payload.bookingId in prev)) return prev;
+        const next = { ...prev };
+        delete next[payload.bookingId];
+        return next;
+      });
+    });
+
     hub
       .start()
       .then(() => refreshUnread())
@@ -84,14 +111,46 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const subscribeToReadReceipts = useCallback((handler: (receipt: ReadReceiptPayload) => void) => {
+    readReceiptListenersRef.current.add(handler);
+    return () => {
+      readReceiptListenersRef.current.delete(handler);
+    };
+  }, []);
+
+  const subscribeToConversationDeleted = useCallback((handler: (payload: ConversationDeletedPayload) => void) => {
+    conversationDeletedListenersRef.current.add(handler);
+    return () => {
+      conversationDeletedListenersRef.current.delete(handler);
+    };
+  }, []);
+
   const totalUnread = useMemo(
     () => Object.values(unreadByBooking).reduce((sum, n) => sum + n, 0),
     [unreadByBooking],
   );
 
   const value = useMemo<ChatContextValue>(
-    () => ({ connection, unreadByBooking, totalUnread, refreshUnread, clearUnread, subscribe }),
-    [connection, unreadByBooking, totalUnread, refreshUnread, clearUnread, subscribe],
+    () => ({
+      connection,
+      unreadByBooking,
+      totalUnread,
+      refreshUnread,
+      clearUnread,
+      subscribe,
+      subscribeToReadReceipts,
+      subscribeToConversationDeleted,
+    }),
+    [
+      connection,
+      unreadByBooking,
+      totalUnread,
+      refreshUnread,
+      clearUnread,
+      subscribe,
+      subscribeToReadReceipts,
+      subscribeToConversationDeleted,
+    ],
   );
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

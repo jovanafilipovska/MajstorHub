@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Dialog, Divider, HelperText, List, Portal, Text, TextInput, useTheme } from 'react-native-paper';
 import { changeMyPassword, deleteMe, updateMe } from '../../api/users';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkMode } from '../../contexts/WorkModeContext';
+import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { apiErrorMessage, useTranslation } from '../../i18n';
@@ -42,11 +43,11 @@ export function SettingsScreen() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    if (!passwordSuccess) return;
-    const timeout = setTimeout(() => setPasswordSuccess(null), 3000);
-    return () => clearTimeout(timeout);
-  }, [passwordSuccess]);
+  useAutoDismiss(error, setError);
+  useAutoDismiss(success, setSuccess);
+  useAutoDismiss(passwordError, setPasswordError);
+  useAutoDismiss(passwordSuccess, setPasswordSuccess);
+  useAutoDismiss(deleteError, setDeleteError);
 
   const onSubmit = async () => {
     if (!token) return;

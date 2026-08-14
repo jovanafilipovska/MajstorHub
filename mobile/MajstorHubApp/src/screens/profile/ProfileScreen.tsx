@@ -9,6 +9,7 @@ import { listFavorites } from '../../api/favorites';
 import { removeMyPhoto, uploadMyPhoto } from '../../api/users';
 import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { LoadingView } from '../../components/LoadingView';
 import { RoleSwitcher } from '../../components/RoleSwitcher';
 import { apiErrorMessage, useTranslation } from '../../i18n';
@@ -51,6 +52,8 @@ export function ProfileScreen({ navigation }: Props) {
   const [photoMenuVisible, setPhotoMenuVisible] = useState(false);
   const [bookingCount, setBookingCount] = useState<number | null>(null);
   const [favoriteCount, setFavoriteCount] = useState<number | null>(null);
+
+  useAutoDismiss(photoError, setPhotoError);
 
   const loadStats = useCallback(() => {
     if (!token || !user) return;

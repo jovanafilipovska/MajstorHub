@@ -8,6 +8,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Button, HelperText, IconButton, Text, TextInput, useTheme } from 'react-native-paper';
 import { createBooking, uploadBookingPhotos } from '../../api/bookings';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { Translations } from '../../i18n';
 import type { BrowseStackParamList } from '../../navigation/types';
@@ -56,6 +57,9 @@ export function CreateBookingScreen({ route, navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  useAutoDismiss(locationError, setLocationError);
+  useAutoDismiss(error, setError);
+
   const captureLocation = useCallback(async () => {
     setLocationError(null);
     setLocating(true);
@@ -65,9 +69,10 @@ export function CreateBookingScreen({ route, navigation }: Props) {
         setLocationError(t.createBooking.errors.locationPermission);
         return;
       }
-      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       setLatitude(position.coords.latitude);
       setLongitude(position.coords.longitude);
+
       const [place] = await Location.reverseGeocodeAsync({
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,

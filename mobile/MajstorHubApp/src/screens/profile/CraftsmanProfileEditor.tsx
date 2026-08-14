@@ -10,6 +10,7 @@ import { removeMyPhoto, uploadMyPhoto } from '../../api/users';
 import { ApiError, resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkMode } from '../../contexts/WorkModeContext';
+import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { LoadingView } from '../../components/LoadingView';
 import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { CraftsmanProfileResponse, ServiceCategoryResponse } from '../../types/api';
@@ -44,6 +45,11 @@ export function CraftsmanProfileEditor() {
   const [suggestError, setSuggestError] = useState<string | null>(null);
   const [suggesting, setSuggesting] = useState(false);
 
+  useAutoDismiss(locationError, setLocationError);
+  useAutoDismiss(error, setError);
+  useAutoDismiss(success, setSuccess);
+  useAutoDismiss(suggestError, setSuggestError);
+
   const captureLocation = useCallback(async () => {
     setLocationError(null);
     setLocating(true);
@@ -53,7 +59,7 @@ export function CraftsmanProfileEditor() {
         setLocationError(t.craftsmanProfileEditor.errors.locationPermission);
         return;
       }
-      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       setLatitude(position.coords.latitude);
       setLongitude(position.coords.longitude);
     } catch {

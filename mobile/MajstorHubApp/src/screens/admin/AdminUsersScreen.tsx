@@ -5,6 +5,7 @@ import { Button, Card, Dialog, HelperText, IconButton, Portal, SegmentedButtons,
 import { deleteUser, getAllUsers } from '../../api/users';
 import { listAllCraftsmen, verifyCraftsman } from '../../api/craftsmen';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { apiErrorMessage, useTranslation } from '../../i18n';
@@ -23,6 +24,8 @@ export function AdminUsersScreen() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
+
+  useAutoDismiss(actionError, setActionError);
 
   const load = useCallback(() => {
     if (!token) return;

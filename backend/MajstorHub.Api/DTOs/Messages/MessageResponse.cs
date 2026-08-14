@@ -6,7 +6,9 @@ public class MessageResponse
     public Guid BookingId { get; set; }
     public Guid SenderId { get; set; }
     public string SenderName { get; set; } = string.Empty;
-    public string Body { get; set; } = string.Empty;
+    public string? SenderProfileImageUrl { get; set; }
+    public string? Body { get; set; }
+    public string? PhotoUrl { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? ReadAt { get; set; }
 }

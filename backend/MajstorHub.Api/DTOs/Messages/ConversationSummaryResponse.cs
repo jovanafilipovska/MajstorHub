@@ -12,5 +12,7 @@ public class ConversationSummaryResponse
     public string? OtherPartyProfileImageUrl { get; set; }
     public string? LastMessagePreview { get; set; }
     public DateTimeOffset? LastMessageAt { get; set; }
+    public Guid? LastMessageSenderId { get; set; }
+    public bool LastMessageIsPhoto { get; set; }
     public int UnreadCount { get; set; }
 }

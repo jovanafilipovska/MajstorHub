@@ -18,6 +18,14 @@ public class MessagesController(IMessageService messageService) : ControllerBase
         return Ok(response);
     }
 
+    [HttpPost("booking/{bookingId:guid}/photo")]
+    [RequestSizeLimit(20_000_000)]
+    public async Task<ActionResult<MessageResponse>> SendPhoto(Guid bookingId, IFormFile file)
+    {
+        var response = await messageService.SendPhotoAsync(User.GetUserId(), bookingId, file);
+        return Ok(response);
+    }
+
     [HttpGet("booking/{bookingId:guid}")]
     public async Task<ActionResult<List<MessageResponse>>> GetHistory(Guid bookingId)
     {
@@ -36,6 +44,13 @@ public class MessagesController(IMessageService messageService) : ControllerBase
     public async Task<IActionResult> MarkRead(Guid bookingId)
     {
         await messageService.MarkReadAsync(bookingId, User.GetUserId());
+        return NoContent();
+    }
+
+    [HttpDelete("booking/{bookingId:guid}")]
+    public async Task<IActionResult> DeleteConversation(Guid bookingId)
+    {
+        await messageService.DeleteConversationAsync(bookingId, User.GetUserId());
         return NoContent();
     }
 }

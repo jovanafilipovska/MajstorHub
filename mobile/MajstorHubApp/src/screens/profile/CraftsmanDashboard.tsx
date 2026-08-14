@@ -6,6 +6,7 @@ import { updateBookingStatus } from '../../api/bookings';
 import { updateMyProfile } from '../../api/craftsmen';
 import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { BookingResponse, CraftsmanProfileResponse } from '../../types/api';
 
@@ -61,6 +62,8 @@ export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBooki
   const [toggling, setToggling] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useAutoDismiss(error, setError);
 
   const myBookings = bookings.filter((b) => b.craftsmanProfileId === profile.userId);
   const incoming = myBookings.filter((b) => b.status === 'Pending');

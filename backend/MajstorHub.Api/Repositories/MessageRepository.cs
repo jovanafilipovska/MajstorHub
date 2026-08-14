@@ -35,4 +35,9 @@ public class MessageRepository(MajstorHubDbContext context) : Repository<Message
             .Where(m => m.BookingId == bookingId && m.SenderId != viewerId && m.ReadAt == null)
             .ExecuteUpdateAsync(setters => setters.SetProperty(m => m.ReadAt, DateTimeOffset.UtcNow));
     }
+
+    public async Task DeleteAllForBookingAsync(Guid bookingId)
+    {
+        await DbSet.Where(m => m.BookingId == bookingId).ExecuteDeleteAsync();
+    }
 }

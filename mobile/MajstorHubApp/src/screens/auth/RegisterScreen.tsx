@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, HelperText, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { AuthStackParamList } from '../../navigation/types';
 
@@ -20,6 +21,8 @@ export function RegisterScreen({ navigation }: Props) {
   const [role, setRole] = useState<'Client' | 'Craftsman'>('Client');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useAutoDismiss(error, setError);
 
   const validationError = (): string | null => {
     if (firstName.trim().length === 0) return t.auth.register.errors.firstNameRequired;

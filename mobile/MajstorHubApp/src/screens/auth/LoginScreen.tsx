@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, HelperText, Text, TextInput } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { AuthStackParamList } from '../../navigation/types';
 
@@ -16,6 +17,8 @@ export function LoginScreen({ navigation }: Props) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useAutoDismiss(error, setError);
 
   const canSubmit = email.trim().length > 0 && password.length > 0 && !submitting;
 

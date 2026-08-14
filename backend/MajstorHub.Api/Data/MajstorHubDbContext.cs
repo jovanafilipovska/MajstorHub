@@ -170,7 +170,8 @@ public class MajstorHubDbContext : DbContext
     {
         modelBuilder.Entity<Message>(entity =>
         {
-            entity.Property(m => m.Body).HasMaxLength(2000).IsRequired();
+            entity.Property(m => m.Body).HasMaxLength(2000);
+            entity.Property(m => m.PhotoUrl).HasMaxLength(500);
             entity.HasIndex(m => new { m.BookingId, m.CreatedAt });
 
             entity.HasOne(m => m.Booking)

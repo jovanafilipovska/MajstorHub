@@ -319,6 +319,16 @@ export const en = {
     failedToLoadHistory: 'Failed to load messages.',
     composePlaceholder: 'Type a message',
     failedToSend: 'Failed to send message.',
+    youPrefix: 'You: ',
+    photoPreview: '📷 Photo',
+    photoPermission: 'Photo library permission is required to attach a photo.',
+    failedToUploadPhoto: 'Failed to send photo.',
+    seen: 'Seen',
+    failedToDeleteConversation: 'Failed to delete conversation.',
+    deleteDialog: {
+      title: 'Delete conversation?',
+      body: 'This permanently deletes this conversation for both you and the other person. This cannot be undone.',
+    },
   },
   roleSwitcher: {
     customer: 'Customer',

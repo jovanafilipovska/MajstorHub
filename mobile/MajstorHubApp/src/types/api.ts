@@ -97,7 +97,9 @@ export interface MessageResponse {
   bookingId: string;
   senderId: string;
   senderName: string;
-  body: string;
+  senderProfileImageUrl?: string;
+  body?: string;
+  photoUrl?: string;
   createdAt: string;
   readAt?: string;
 }
@@ -116,6 +118,8 @@ export interface ConversationSummaryResponse {
   otherPartyProfileImageUrl?: string;
   lastMessagePreview?: string;
   lastMessageAt?: string;
+  lastMessageSenderId?: string;
+  lastMessageIsPhoto: boolean;
   unreadCount: number;
 }
 
