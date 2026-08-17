@@ -130,6 +130,8 @@ public class MessageService(
                 BookingId = booking.Id,
                 BookingStatus = booking.Status,
                 ServiceCategoryName = booking.ServiceCategory.Name,
+                ClientId = booking.ClientId,
+                CraftsmanProfileId = booking.CraftsmanProfileId,
                 OtherPartyId = isClient ? booking.CraftsmanProfileId : booking.ClientId,
                 OtherPartyName = isClient ? booking.CraftsmanProfile.User.FullName : booking.Client.FullName,
                 OtherPartyProfileImageUrl = isClient ? booking.CraftsmanProfile.User.ProfileImageUrl : booking.Client.ProfileImageUrl,

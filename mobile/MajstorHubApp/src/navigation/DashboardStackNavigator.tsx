@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { CraftsmanDashboardScreen } from '../screens/profile/CraftsmanDashboardScreen';
 import { MyReviewsScreen } from '../screens/profile/MyReviewsScreen';
 import { HamburgerButton } from '../components/HamburgerButton';
+import { TabBackButton } from '../components/TabBackButton';
 import { useTranslation } from '../i18n';
 import type { DashboardStackParamList } from './types';
 
@@ -11,7 +12,11 @@ export function DashboardStackNavigator() {
   const t = useTranslation();
   return (
     <Stack.Navigator screenOptions={{ headerRight: () => <HamburgerButton /> }}>
-      <Stack.Screen name="Dashboard" component={CraftsmanDashboardScreen} options={{ title: t.nav.dashboard }} />
+      <Stack.Screen
+        name="Dashboard"
+        component={CraftsmanDashboardScreen}
+        options={{ title: t.nav.dashboard, headerLeft: () => <TabBackButton /> }}
+      />
       <Stack.Screen name="MyReviews" component={MyReviewsScreen} options={{ title: t.nav.myReviewsTitle }} />
     </Stack.Navigator>
   );

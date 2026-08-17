@@ -1,20 +1,15 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, Dialog, Divider, HelperText, List, Portal, Text, TextInput, useTheme } from 'react-native-paper';
+import { Button, Dialog, HelperText, Portal, Text, TextInput, useTheme } from 'react-native-paper';
 import { changeMyPassword, deleteMe, updateMe } from '../../api/users';
 import { useAuth } from '../../contexts/AuthContext';
-import { useWorkMode } from '../../contexts/WorkModeContext';
 import { useAutoDismiss } from '../../hooks/useAutoDismiss';
-import { ThemeToggle } from '../../components/ThemeToggle';
-import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { apiErrorMessage, useTranslation } from '../../i18n';
 
 export function SettingsScreen() {
   const { user, token, refreshUser, logout } = useAuth();
-  const { mode } = useWorkMode();
   const theme = useTheme();
   const t = useTranslation();
-  const isClient = mode === 'client';
 
   const [firstName, setFirstName] = useState(user?.firstName ?? '');
   const [lastName, setLastName] = useState(user?.lastName ?? '');
@@ -148,102 +143,62 @@ export function SettingsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {isClient && (
-        <>
-          <View style={styles.section}>
-            <Text variant="titleMedium">{t.settings.personalInfo}</Text>
-            <TextInput label={t.settings.firstNameLabel} value={firstName} onChangeText={setFirstName} mode="outlined" />
-            <TextInput label={t.settings.lastNameLabel} value={lastName} onChangeText={setLastName} mode="outlined" />
-            <TextInput
-              label={t.settings.phoneLabel}
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              keyboardType="phone-pad"
-              mode="outlined"
-            />
-          </View>
-
-          <View style={styles.section}>
-            <Text variant="titleMedium">{t.settings.account}</Text>
-            <TextInput
-              label={t.settings.emailLabel}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              mode="outlined"
-            />
-          </View>
-
-          <View style={styles.section}>
-            <Text variant="titleMedium">{t.settings.address}</Text>
-            <TextInput label={t.settings.streetLabel} value={street} onChangeText={setStreet} mode="outlined" />
-            <TextInput label={t.settings.numberLabel} value={houseNumber} onChangeText={setHouseNumber} mode="outlined" />
-            <TextInput label={t.settings.cityLabel} value={city} onChangeText={setCity} mode="outlined" />
-            <TextInput label={t.settings.countryLabel} value={country} onChangeText={setCountry} mode="outlined" />
-          </View>
-
-          <View style={styles.section}>
-            {error && <HelperText type="error">{error}</HelperText>}
-            {success && <HelperText type="info">{success}</HelperText>}
-            <Button mode="contained" onPress={onSubmit} loading={submitting} disabled={submitting}>
-              {t.settings.saveChanges}
-            </Button>
-          </View>
-        </>
-      )}
-
       <View style={styles.section}>
-        <ThemeToggle />
+        <Text variant="titleMedium">{t.settings.personalInfo}</Text>
+        <TextInput label={t.settings.firstNameLabel} value={firstName} onChangeText={setFirstName} mode="outlined" />
+        <TextInput label={t.settings.lastNameLabel} value={lastName} onChangeText={setLastName} mode="outlined" />
+        <TextInput
+          label={t.settings.phoneLabel}
+          value={phoneNumber}
+          onChangeText={setPhoneNumber}
+          keyboardType="phone-pad"
+          mode="outlined"
+        />
       </View>
 
       <View style={styles.section}>
-        <LanguageSwitcher />
+        <Text variant="titleMedium">{t.settings.account}</Text>
+        <TextInput
+          label={t.settings.emailLabel}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          mode="outlined"
+        />
       </View>
 
-      {isClient ? (
-        <View style={styles.section}>
-          <Button mode="outlined" icon="lock-outline" onPress={openPasswordDialog}>
-            {t.settings.changePassword}
-          </Button>
-          {passwordSuccess && <HelperText type="info">{passwordSuccess}</HelperText>}
-          <Button
-            mode="outlined"
-            icon="delete-outline"
-            onPress={openDeleteDialog}
-            textColor={theme.colors.error}
-            style={{ borderColor: theme.colors.error }}
-          >
-            {t.settings.deleteAccount}
-          </Button>
-        </View>
-      ) : (
-        <View style={styles.section}>
-          {passwordSuccess && <HelperText type="info">{passwordSuccess}</HelperText>}
-          <Card style={styles.groupCard} mode="contained">
-            <List.Item
-              title={t.settings.changePassword}
-              left={(props) => <List.Icon {...props} icon="lock-outline" />}
-              onPress={openPasswordDialog}
-              right={(props) => <List.Icon {...props} icon="chevron-right" />}
-            />
-            <Divider />
-            <List.Item
-              title={t.settings.deleteAccount}
-              titleStyle={{ color: theme.colors.error }}
-              left={(props) => <List.Icon {...props} icon="delete-outline" color={theme.colors.error} />}
-              onPress={openDeleteDialog}
-            />
-            <Divider />
-            <List.Item
-              title={t.common.logOut}
-              titleStyle={{ color: theme.colors.error }}
-              left={(props) => <List.Icon {...props} icon="logout" color={theme.colors.error} />}
-              onPress={() => logout()}
-            />
-          </Card>
-        </View>
-      )}
+      <View style={styles.section}>
+        <Text variant="titleMedium">{t.settings.address}</Text>
+        <TextInput label={t.settings.streetLabel} value={street} onChangeText={setStreet} mode="outlined" />
+        <TextInput label={t.settings.numberLabel} value={houseNumber} onChangeText={setHouseNumber} mode="outlined" />
+        <TextInput label={t.settings.cityLabel} value={city} onChangeText={setCity} mode="outlined" />
+        <TextInput label={t.settings.countryLabel} value={country} onChangeText={setCountry} mode="outlined" />
+      </View>
+
+      <View style={styles.section}>
+        {error && <HelperText type="error">{error}</HelperText>}
+        {success && <HelperText type="info">{success}</HelperText>}
+        <Button mode="contained" onPress={onSubmit} loading={submitting} disabled={submitting}>
+          {t.settings.saveChanges}
+        </Button>
+      </View>
+
+      <View style={styles.section}>
+        <Button mode="outlined" icon="lock-outline" onPress={openPasswordDialog}>
+          {t.settings.changePassword}
+        </Button>
+        {passwordSuccess && <HelperText type="info">{passwordSuccess}</HelperText>}
+        <Button
+          mode="outlined"
+          icon="delete-outline"
+          onPress={openDeleteDialog}
+          textColor={theme.colors.error}
+          style={{ borderColor: theme.colors.error }}
+        >
+          {t.settings.deleteAccount}
+        </Button>
+      </View>
 
       <Portal>
         <Dialog visible={passwordVisible} onDismiss={() => setPasswordVisible(false)}>
@@ -327,10 +282,6 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: 12,
-  },
-  groupCard: {
-    borderRadius: 12,
-    overflow: 'hidden',
   },
   dialogContent: {
     gap: 12,

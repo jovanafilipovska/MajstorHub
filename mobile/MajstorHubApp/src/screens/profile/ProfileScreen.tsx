@@ -43,7 +43,7 @@ function StatTile({ label, value, onPress }: { label: string; value: number | nu
 }
 
 export function ProfileScreen({ navigation }: Props) {
-  const { user, token, refreshUser, logout } = useAuth();
+  const { user, token, refreshUser } = useAuth();
   const theme = useTheme();
   const t = useTranslation();
 
@@ -200,8 +200,6 @@ export function ProfileScreen({ navigation }: Props) {
           onPress={() => navigation.navigate('Settings')}
           right={(props) => <List.Icon {...props} icon="chevron-right" />}
         />
-        <Divider />
-        <List.Item title={t.common.logOut} titleStyle={{ color: theme.colors.error }} onPress={() => logout()} />
       </Card>
     </ScrollView>
   );

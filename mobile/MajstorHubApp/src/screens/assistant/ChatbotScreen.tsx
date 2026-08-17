@@ -12,6 +12,7 @@ import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { HamburgerButton } from '../../components/HamburgerButton';
+import { TabBackButton } from '../../components/TabBackButton';
 import { ChatSuggestionCard } from '../../components/ChatSuggestionCard';
 import { apiErrorMessage, useTranslation } from '../../i18n';
 import { distanceKm } from '../../utils/geo';
@@ -133,7 +134,10 @@ export function ChatbotScreen({ navigation }: Props) {
     return (
       <View style={[styles.emptyState, { backgroundColor: theme.colors.background, paddingTop: insets.top + 24 }]}>
         <View style={styles.emptyStateHeader}>
-          <Text variant="titleMedium">{t.assistant.title}</Text>
+          <View style={styles.headerLeft}>
+            <TabBackButton />
+            <Text variant="titleMedium">{t.assistant.title}</Text>
+          </View>
           <HamburgerButton />
         </View>
         <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
@@ -162,7 +166,10 @@ export function ChatbotScreen({ navigation }: Props) {
       keyboardVerticalOffset={insets.top}
     >
       <View style={[styles.header, { paddingTop: insets.top + 12, borderBottomColor: theme.colors.outlineVariant }]}>
-        <Text variant="titleLarge">{t.assistant.title}</Text>
+        <View style={styles.headerLeft}>
+          <TabBackButton />
+          <Text variant="titleLarge">{t.assistant.title}</Text>
+        </View>
         <View style={styles.headerActions}>
           <IconButton icon="refresh" onPress={() => setResetVisible(true)} disabled={messages.length === 0} />
           <HamburgerButton />
@@ -275,6 +282,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   headerActions: {
     flexDirection: 'row',

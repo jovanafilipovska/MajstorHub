@@ -113,6 +113,8 @@ export interface ConversationSummaryResponse {
   bookingId: string;
   bookingStatus: BookingStatus;
   serviceCategoryName: string;
+  clientId: string;
+  craftsmanProfileId: string;
   otherPartyId: string;
   otherPartyName: string;
   otherPartyProfileImageUrl?: string;

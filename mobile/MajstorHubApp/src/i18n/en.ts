@@ -249,8 +249,10 @@ export const en = {
   },
   craftsmanProfileEditor: {
     titleCreate: 'Set up your business',
-    titleEdit: 'Business Profile',
+    businessInfoTitle: 'Business info',
+    pricingTitle: 'Pricing & experience',
     addPhoto: 'Add photo',
+    changePhoto: 'Change photo',
     removePhoto: 'Remove photo',
     businessName: 'Business name',
     serviceCategory: 'Service category',
@@ -361,6 +363,12 @@ export const en = {
   },
   languageSwitcher: {
     language: 'Language',
+  },
+  drawer: {
+    logOutDialog: {
+      title: 'Log out?',
+      body: 'You will need to sign in again to access your account.',
+    },
   },
   adminUsers: {
     clientsFilter: 'Clients',

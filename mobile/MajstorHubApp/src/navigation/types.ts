@@ -45,10 +45,6 @@ export type AssistantStackParamList = {
   CreateBooking: { craftsmanUserId: string; craftsmanName: string; serviceCategoryId: number };
 };
 
-export type SettingsStackParamList = {
-  Settings: undefined;
-};
-
 export type MainTabParamList = {
   DashboardTab: NavigatorScreenParams<DashboardStackParamList>;
   BrowseTab: NavigatorScreenParams<BrowseStackParamList>;
@@ -56,7 +52,6 @@ export type MainTabParamList = {
   AssistantTab: NavigatorScreenParams<AssistantStackParamList>;
   MessagesTab: NavigatorScreenParams<MessagesStackParamList>;
   ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
-  SettingsTab: NavigatorScreenParams<SettingsStackParamList>;
 };
 
 export type AdminUsersStackParamList = {

@@ -1,22 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
-import { Avatar, Chip, Menu, Searchbar, Text, useTheme } from 'react-native-paper';
+import { Chip, Searchbar, Text, useTheme } from 'react-native-paper';
 import { listServiceCategories } from '../../api/serviceCategories';
 import { listAllCraftsmen, listCraftsmenByCategory } from '../../api/craftsmen';
 import { getMyBookings } from '../../api/bookings';
-import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../contexts/LanguageContext';
-import type { Language } from '../../contexts/LanguageContext';
 import { distanceKm } from '../../utils/geo';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { CraftsmanCard } from '../../components/CraftsmanCard';
 import { HamburgerButton } from '../../components/HamburgerButton';
+import { TabBackButton } from '../../components/TabBackButton';
 import { apiErrorMessage, useTranslation } from '../../i18n';
 import type { BrowseStackParamList } from '../../navigation/types';
 import type { BookingResponse, CraftsmanProfileResponse, ServiceCategoryResponse } from '../../types/api';
@@ -35,17 +33,6 @@ const NEW_COUNT = 8;
 const RECOMMENDED_CARD_WIDTH = 160;
 const RECOMMENDED_COUNT = 8;
 const RECOMMENDED_CATEGORY_BOOKING_THRESHOLD = 3;
-
-const LANGUAGE_LABELS: Record<Language, string> = { mk: 'MK', sq: 'SQ', en: 'EN' };
-
-function initialsOf(fullName: string): string {
-  const initials = fullName
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '');
-  return initials.join('') || '?';
-}
 
 function formatDistance(km: number): string {
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
@@ -67,7 +54,6 @@ export function HomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const t = useTranslation();
   const { user, token } = useAuth();
-  const { language, setLanguage } = useLanguage();
   const { width } = useWindowDimensions();
   const searchCardWidth = (width - GRID_PADDING * 2 - GRID_GAP) / 2;
 
@@ -77,7 +63,6 @@ export function HomeScreen({ navigation }: Props) {
   const [myBookings, setMyBookings] = useState<BookingResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
-  const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [coords, setCoords] = useState<Coordinates | null>(null);
 
   useEffect(() => {
@@ -223,49 +208,16 @@ export function HomeScreen({ navigation }: Props) {
     >
       <View style={[styles.headerArea, { paddingTop: insets.top + 24 }]}>
         <View style={styles.topRow}>
-          <View>
-            <Text variant="labelLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-              {t.home.greeting}
-            </Text>
-            <Text variant="headlineSmall">{user?.fullName}</Text>
+          <View style={styles.topRowLeft}>
+            <TabBackButton />
+            <View>
+              <Text variant="labelLarge" style={{ color: theme.colors.onSurfaceVariant }}>
+                {t.home.greeting}
+              </Text>
+              <Text variant="headlineSmall">{user?.fullName}</Text>
+            </View>
           </View>
           <View style={styles.topRowActions}>
-            <Menu
-              visible={langMenuOpen}
-              onDismiss={() => setLangMenuOpen(false)}
-              anchor={
-                <Chip
-                  mode="outlined"
-                  onPress={() => setLangMenuOpen(true)}
-                  style={[styles.langChip, { borderColor: theme.colors.outline }]}
-                >
-                  {LANGUAGE_LABELS[language]}
-                </Chip>
-              }
-            >
-              {(Object.keys(LANGUAGE_LABELS) as Language[]).map((code) => (
-                <Menu.Item
-                  key={code}
-                  onPress={() => {
-                    setLanguage(code);
-                    setLangMenuOpen(false);
-                  }}
-                  title={LANGUAGE_LABELS[code]}
-                />
-              ))}
-            </Menu>
-            <Pressable onPress={() => navigation.getParent()?.navigate('ProfileTab' as never)}>
-              {user?.profileImageUrl ? (
-                <Avatar.Image size={40} source={{ uri: resolveMediaUrl(user.profileImageUrl) }} />
-              ) : (
-                <Avatar.Text
-                  size={40}
-                  label={initialsOf(user?.fullName ?? '?')}
-                  style={{ backgroundColor: theme.colors.primary }}
-                  labelStyle={{ color: theme.colors.onPrimary }}
-                />
-              )}
-            </Pressable>
             <HamburgerButton />
           </View>
         </View>
@@ -397,13 +349,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
   },
+  topRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   topRowActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  langChip: {
-    borderRadius: 20,
   },
   searchbar: {
     marginHorizontal: 16,

@@ -245,8 +245,10 @@ export const mk: Translations = {
   },
   craftsmanProfileEditor: {
     titleCreate: 'Постави го твојот бизнис',
-    titleEdit: 'Бизнис профил',
+    businessInfoTitle: 'Информации за бизнисот',
+    pricingTitle: 'Цени и искуство',
     addPhoto: 'Додади фотографија',
+    changePhoto: 'Промени фотографија',
     removePhoto: 'Отстрани фотографија',
     businessName: 'Име на бизнисот',
     serviceCategory: 'Категорија на услуга',
@@ -357,6 +359,12 @@ export const mk: Translations = {
   },
   languageSwitcher: {
     language: 'Јазик',
+  },
+  drawer: {
+    logOutDialog: {
+      title: 'Одјава?',
+      body: 'Ќе треба повторно да се најавите за да пристапите до вашата сметка.',
+    },
   },
   adminUsers: {
     clientsFilter: 'Клиенти',

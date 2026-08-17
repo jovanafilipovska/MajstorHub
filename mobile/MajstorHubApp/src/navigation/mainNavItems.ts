@@ -6,7 +6,6 @@ import { AssistantStackNavigator } from './AssistantStackNavigator';
 import { MessagesStackNavigator } from './MessagesStackNavigator';
 import { ProfileStackNavigator } from './ProfileStackNavigator';
 import { CraftsmanProfileStackNavigator } from './CraftsmanProfileStackNavigator';
-import { SettingsStackNavigator } from './SettingsStackNavigator';
 import type { WorkMode } from '../contexts/WorkModeContext';
 import type { Translations } from '../i18n';
 import type { MainTabParamList } from './types';
@@ -71,12 +70,5 @@ export const mainNavItems: MainNavItem[] = [
     modes: ['craftsman'],
     title: (t) => t.nav.profile,
     component: CraftsmanProfileStackNavigator,
-  },
-  {
-    key: 'SettingsTab',
-    icon: 'cog',
-    modes: ['craftsman'],
-    title: (t) => t.nav.settings,
-    component: SettingsStackNavigator,
   },
 ];

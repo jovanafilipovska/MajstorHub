@@ -245,8 +245,10 @@ export const sq: Translations = {
   },
   craftsmanProfileEditor: {
     titleCreate: 'Konfiguroni biznesin tuaj',
-    titleEdit: 'Profili i biznesit',
+    businessInfoTitle: 'Informacione për biznesin',
+    pricingTitle: 'Çmimet dhe përvoja',
     addPhoto: 'Shto fotografi',
+    changePhoto: 'Ndrysho fotografinë',
     removePhoto: 'Hiq fotografinë',
     businessName: 'Emri i biznesit',
     serviceCategory: 'Kategoria e shërbimit',
@@ -357,6 +359,12 @@ export const sq: Translations = {
   },
   languageSwitcher: {
     language: 'Gjuha',
+  },
+  drawer: {
+    logOutDialog: {
+      title: 'Të dilni nga llogaria?',
+      body: 'Do t\'ju duhet të kyçeni përsëri për të hyrë në llogarinë tuaj.',
+    },
   },
   adminUsers: {
     clientsFilter: 'Klientë',

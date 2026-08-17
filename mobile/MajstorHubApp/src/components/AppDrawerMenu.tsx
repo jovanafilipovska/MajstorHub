@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Badge, Drawer, Text, useTheme } from 'react-native-paper';
+import { Badge, Button, Dialog, Divider, Drawer, Portal, Text, useTheme } from 'react-native-paper';
 import { mainNavItems } from '../navigation/mainNavItems';
 import { navigationRef } from '../navigation/navigationRef';
+import { useAuth } from '../contexts/AuthContext';
 import { useWorkMode } from '../contexts/WorkModeContext';
 import { useChat } from '../contexts/ChatContext';
 import { useTranslation } from '../i18n';
+import { LanguageSwitcher } from './LanguageSwitcher';
+import { ThemeToggle } from './ThemeToggle';
 
 const DRAWER_WIDTH = Dimensions.get('window').width * 0.78;
 const ANIMATION_MS = 250;
@@ -22,9 +25,11 @@ export function AppDrawerMenu({ visible, onClose }: Props) {
   const t = useTranslation();
   const { mode } = useWorkMode();
   const { totalUnread } = useChat();
+  const { logout } = useAuth();
   // Kept mounted through the closing animation - Modal's own `visible` prop
   // would unmount it instantly, cutting off the slide-out.
   const [mounted, setMounted] = useState(false);
+  const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
   const translateX = useRef(new Animated.Value(DRAWER_WIDTH)).current;
   const visibleRef = useRef(visible);
   visibleRef.current = visible;
@@ -60,40 +65,81 @@ export function AppDrawerMenu({ visible, onClose }: Props) {
     }
   };
 
+  const confirmLogout = () => {
+    setLogoutDialogVisible(false);
+    onClose();
+    logout();
+  };
+
   return (
     <Modal visible transparent animationType="none" statusBarTranslucent onRequestClose={onClose}>
-      <View style={styles.root}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t.common.cancel} />
-        <Animated.View
-          style={[
-            styles.panel,
-            {
-              width: DRAWER_WIDTH,
-              paddingTop: insets.top + 12,
-              paddingBottom: insets.bottom + 12,
-              backgroundColor: theme.colors.surface,
-              transform: [{ translateX }],
-            },
-          ]}
-        >
-          <Text variant="titleLarge" style={styles.header}>
-            {t.common.appName}
-          </Text>
-          <Drawer.Section showDivider={false}>
-            {items.map((item) => (
-              <Drawer.Item
-                key={item.key}
-                icon={item.icon}
-                label={item.title(t)}
-                onPress={() => navigateTo(item.key)}
-                right={
-                  item.key === 'MessagesTab' && totalUnread > 0 ? () => <Badge>{totalUnread}</Badge> : undefined
-                }
-              />
-            ))}
-          </Drawer.Section>
-        </Animated.View>
-      </View>
+      <Portal.Host>
+        <View style={styles.root}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t.common.cancel} />
+          <Animated.View
+            style={[
+              styles.panel,
+              {
+                width: DRAWER_WIDTH,
+                paddingTop: insets.top + 12,
+                paddingBottom: insets.bottom -18,
+                backgroundColor: theme.colors.surface,
+                transform: [{ translateX }],
+              },
+            ]}
+          >
+            <Text variant="titleLarge" style={styles.header}>
+              {t.common.appName}
+            </Text>
+            <Drawer.Section showDivider={false} style={styles.navSection}>
+              {items.map((item) => (
+                <Drawer.Item
+                  key={item.key}
+                  icon={item.icon}
+                  label={item.title(t)}
+                  onPress={() => navigateTo(item.key)}
+                  right={
+                    item.key === 'MessagesTab' && totalUnread > 0 ? () => <Badge>{totalUnread}</Badge> : undefined
+                  }
+                />
+              ))}
+            </Drawer.Section>
+
+            <Divider />
+            <View style={styles.settingsRow}>
+              <View style={styles.settingsItem}>
+                <LanguageSwitcher />
+              </View>
+              <View style={styles.settingsItem}>
+                <ThemeToggle />
+              </View>
+            </View>
+
+            <Divider style={styles.logoutDivider} />
+            <Drawer.Item
+              icon="logout"
+              label={t.common.logOut}
+              onPress={() => setLogoutDialogVisible(true)}
+              theme={{ colors: { onSurfaceVariant: theme.colors.error } }}
+            />
+
+            <Portal>
+              <Dialog visible={logoutDialogVisible} onDismiss={() => setLogoutDialogVisible(false)}>
+                <Dialog.Title>{t.drawer.logOutDialog.title}</Dialog.Title>
+                <Dialog.Content>
+                  <Text variant="bodyMedium">{t.drawer.logOutDialog.body}</Text>
+                </Dialog.Content>
+                <Dialog.Actions>
+                  <Button onPress={() => setLogoutDialogVisible(false)}>{t.common.cancel}</Button>
+                  <Button onPress={confirmLogout} textColor={theme.colors.error}>
+                    {t.common.logOut}
+                  </Button>
+                </Dialog.Actions>
+              </Dialog>
+            </Portal>
+          </Animated.View>
+        </View>
+      </Portal.Host>
     </Modal>
   );
 }
@@ -111,5 +157,20 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingBottom: 12,
+  },
+  navSection: {
+    flex: 1,
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  settingsItem: {
+    flex: 1,
+  },
+  logoutDivider: {
+    marginTop: 16,
   },
 });

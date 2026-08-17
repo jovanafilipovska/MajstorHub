@@ -7,6 +7,7 @@ import { deleteConversation, getConversations } from '../../api/messages';
 import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useChat } from '../../contexts/ChatContext';
+import { useWorkMode } from '../../contexts/WorkModeContext';
 import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
@@ -39,6 +40,7 @@ function formatRelative(iso: string): string {
 
 export function ConversationsScreen({ navigation }: Props) {
   const { token, user } = useAuth();
+  const { mode } = useWorkMode();
   const { unreadByBooking, refreshUnread, subscribeToConversationDeleted } = useChat();
   const theme = useTheme();
   const t = useTranslation();
@@ -90,13 +92,20 @@ export function ConversationsScreen({ navigation }: Props) {
   if (error) return <ErrorView message={error} onRetry={load} />;
   if (!conversations) return <LoadingView />;
 
+  // Craftsman mode shows conversations from bookings received as the provider;
+  // client mode shows conversations from bookings made as the customer - mirrors
+  // the role scoping on MyBookingsScreen.
+  const visibleConversations = conversations.filter((c) =>
+    mode === 'craftsman' ? c.craftsmanProfileId === user?.id : c.clientId === user?.id,
+  );
+
   return (
     <View style={styles.root}>
       {deleteError && <HelperText type="error">{deleteError}</HelperText>}
 
       <FlatList
         contentContainerStyle={styles.list}
-        data={conversations}
+        data={visibleConversations}
         keyExtractor={(item) => item.bookingId}
         ListEmptyComponent={<Text style={styles.empty}>{t.messages.emptyConversations}</Text>}
         renderItem={({ item }) => {

@@ -1,24 +1,34 @@
-import { View } from 'react-native';
-import { SegmentedButtons, Text } from 'react-native-paper';
+import { StyleSheet, View } from 'react-native';
+import { Button, Text } from 'react-native-paper';
 import { useThemeMode } from '../contexts/ThemeContext';
-import type { ThemeMode } from '../contexts/ThemeContext';
 import { useTranslation } from '../i18n';
 
 export function ThemeToggle() {
-  const { mode, setMode } = useThemeMode();
+  const { mode, toggleTheme } = useThemeMode();
   const t = useTranslation();
 
+  const isDark = mode === 'dark';
+
   return (
-    <View style={{ gap: 8 }}>
+    <View style={styles.root}>
       <Text variant="labelLarge">{t.themeToggle.appearance}</Text>
-      <SegmentedButtons
-        value={mode}
-        onValueChange={(value) => setMode(value as ThemeMode)}
-        buttons={[
-          { value: 'light', label: t.themeToggle.light, icon: 'white-balance-sunny' },
-          { value: 'dark', label: t.themeToggle.dark, icon: 'weather-night' },
-        ]}
-      />
+      <Button
+        mode="outlined"
+        onPress={() => toggleTheme()}
+        contentStyle={styles.anchorContent}
+        icon={isDark ? 'weather-night' : 'white-balance-sunny'}
+      >
+        {isDark ? t.themeToggle.dark : t.themeToggle.light}
+      </Button>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    gap: 8,
+  },
+  anchorContent: {
+    justifyContent: 'flex-start',
+  },
+});

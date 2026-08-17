@@ -7,6 +7,7 @@ import { BookingDetailScreen } from '../screens/bookings/BookingDetailScreen';
 import { LeaveReviewScreen } from '../screens/bookings/LeaveReviewScreen';
 import { ChatScreen } from '../screens/messages/ChatScreen';
 import { HamburgerButton } from '../components/HamburgerButton';
+import { TabBackButton } from '../components/TabBackButton';
 import { useTranslation } from '../i18n';
 import type { ProfileStackParamList } from './types';
 
@@ -16,7 +17,11 @@ export function ProfileStackNavigator() {
   const t = useTranslation();
   return (
     <Stack.Navigator screenOptions={{ headerRight: () => <HamburgerButton /> }}>
-      <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: t.nav.profile }} />
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ title: t.nav.profile, headerLeft: () => <TabBackButton /> }}
+      />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t.nav.settings }} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ title: t.nav.favoriteProsTitle }} />
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: t.nav.bookingHistoryTitle }} />

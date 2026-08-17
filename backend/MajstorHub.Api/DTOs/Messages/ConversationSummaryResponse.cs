@@ -7,6 +7,8 @@ public class ConversationSummaryResponse
     public Guid BookingId { get; set; }
     public BookingStatus BookingStatus { get; set; }
     public string ServiceCategoryName { get; set; } = string.Empty;
+    public Guid ClientId { get; set; }
+    public Guid CraftsmanProfileId { get; set; }
     public Guid OtherPartyId { get; set; }
     public string OtherPartyName { get; set; } = string.Empty;
     public string? OtherPartyProfileImageUrl { get; set; }

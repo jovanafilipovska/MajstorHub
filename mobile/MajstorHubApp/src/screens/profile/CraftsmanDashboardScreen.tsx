@@ -8,7 +8,6 @@ import { getMyBookings } from '../../api/bookings';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingView } from '../../components/LoadingView';
-import { RoleSwitcher } from '../../components/RoleSwitcher';
 import { CraftsmanDashboard } from './CraftsmanDashboard';
 import { useTranslation } from '../../i18n';
 import type { DashboardStackParamList } from '../../navigation/types';
@@ -47,7 +46,6 @@ export function CraftsmanDashboardScreen({ navigation }: Props) {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <RoleSwitcher />
       {profile === null ? (
         <View style={[styles.emptyState, { backgroundColor: theme.colors.surfaceVariant }]}>
           <Text variant="titleMedium">{t.craftsmanDashboardScreen.setUpTitle}</Text>

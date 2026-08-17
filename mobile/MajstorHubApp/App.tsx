@@ -16,6 +16,7 @@ import { WorkModeProvider } from './src/contexts/WorkModeContext';
 import { DrawerProvider } from './src/contexts/DrawerContext';
 import { ThemeProvider, useThemeMode } from './src/contexts/ThemeContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
+import { TabHistoryProvider, useTabHistory } from './src/contexts/TabHistoryContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { navigationRef } from './src/navigation/navigationRef';
 import { LoadingView } from './src/components/LoadingView';
@@ -30,6 +31,7 @@ const { LightTheme: navLightTheme, DarkTheme: navDarkTheme } = adaptNavigationTh
 
 function AppShell() {
   const { mode, isLoading } = useThemeMode();
+  const { handleStateChange } = useTabHistory();
   const activeTheme = mode === 'dark' ? darkTheme : lightTheme;
 
   if (isLoading) {
@@ -45,7 +47,11 @@ function AppShell() {
       <AuthProvider>
         <ChatProvider>
           <WorkModeProvider>
-            <NavigationContainer ref={navigationRef} theme={mode === 'dark' ? navDarkTheme : navLightTheme}>
+            <NavigationContainer
+              ref={navigationRef}
+              theme={mode === 'dark' ? navDarkTheme : navLightTheme}
+              onStateChange={handleStateChange}
+            >
               <DrawerProvider>
                 <RootNavigator />
               </DrawerProvider>
@@ -79,7 +85,9 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <LanguageProvider>
-          <AppShell />
+          <TabHistoryProvider>
+            <AppShell />
+          </TabHistoryProvider>
         </LanguageProvider>
       </ThemeProvider>
     </SafeAreaProvider>
