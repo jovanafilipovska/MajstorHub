@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Button, HelperText, Text, TextInput } from 'react-native-paper';
+import { Button, HelperText, TextInput } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { apiErrorMessage, useTranslation } from '../../i18n';
@@ -36,9 +36,7 @@ export function LoginScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text variant="headlineMedium" style={styles.title}>
-        MajstorHub
-      </Text>
+      <Image source={require('../../../assets/majstorhub_logo.png')} style={styles.logo} resizeMode="contain" />
 
       <TextInput
         label={t.auth.login.emailLabel}
@@ -81,8 +79,10 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 12,
   },
-  title: {
-    textAlign: 'center',
+  logo: {
+    width: 200,
+    height: 145,
+    alignSelf: 'center',
     marginBottom: 24,
   },
 });

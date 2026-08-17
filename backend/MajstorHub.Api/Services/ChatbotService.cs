@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using MajstorHub.Api.Ai;
 using MajstorHub.Api.DTOs.Chatbot;
+using MajstorHub.Api.DTOs.Craftsmen;
 using MajstorHub.Api.Exceptions;
 using MajstorHub.Api.Mappings;
 using MajstorHub.Api.Models;
@@ -88,7 +89,7 @@ public class ChatbotService(
         var toolDefinitions = chatbotToolService.GetToolDefinitions(mode);
         var toolContext = new ChatbotToolContext(userId, mode, latitude, longitude);
 
-        var finalContent = await RunToolCallingLoopAsync(groqMessages, toolDefinitions, toolContext, ct);
+        var (finalContent, suggestions) = await RunToolCallingLoopAsync(groqMessages, toolDefinitions, toolContext, ct);
 
         var assistantMessage = new ChatbotMessage
         {
@@ -103,19 +104,24 @@ public class ChatbotService(
         chatbotRepository.Update(conversation);
         await chatbotRepository.SaveChangesAsync();
 
-        return assistantMessage.ToResponse();
+        var response = assistantMessage.ToResponse();
+        response.Suggestions = suggestions;
+        return response;
     }
 
-    private async Task<string> RunToolCallingLoopAsync(
+    private async Task<(string Content, List<CraftsmanProfileResponse>? Suggestions)> RunToolCallingLoopAsync(
         List<GroqMessage> groqMessages, List<GroqToolDefinition> toolDefinitions, ChatbotToolContext toolContext, CancellationToken ct)
     {
+        List<CraftsmanProfileResponse>? latestSuggestions = null;
+
         for (var iteration = 0; iteration < MaxToolIterations; iteration++)
         {
             var result = await groqClient.CompleteAsync(groqMessages, toolDefinitions, ct);
 
             if (result.ToolCalls.Count == 0)
             {
-                return result.Content ?? "Sorry, I couldn't come up with an answer just now - could you try rephrasing that?";
+                var content = result.Content ?? "Sorry, I couldn't come up with an answer just now - could you try rephrasing that?";
+                return (content, latestSuggestions);
             }
 
             groqMessages.Add(new GroqMessage { Role = "assistant", Content = result.Content, ToolCalls = result.ToolCalls });
@@ -123,16 +129,21 @@ public class ChatbotService(
             foreach (var toolCall in result.ToolCalls)
             {
                 var toolResult = await chatbotToolService.ExecuteAsync(toolCall.Function.Name, toolCall.Function.Arguments, toolContext, ct);
+                if (toolResult.Suggestions is not null)
+                {
+                    latestSuggestions = toolResult.Suggestions;
+                }
+
                 groqMessages.Add(new GroqMessage
                 {
                     Role = "tool",
                     ToolCallId = toolCall.Id,
-                    Content = JsonSerializer.Serialize(toolResult)
+                    Content = JsonSerializer.Serialize(toolResult.ForModel)
                 });
             }
         }
 
-        return "I looked into that but I'm having trouble pulling everything together right now - please try asking again.";
+        return ("I looked into that but I'm having trouble pulling everything together right now - please try asking again.", latestSuggestions);
     }
 
     private async Task<ChatbotConversation> GetOrCreateConversationAsync(Guid userId, ChatbotMode mode)
@@ -177,15 +188,23 @@ public class ChatbotService(
                           "from the app guide below in 1-3 sentences. Do NOT call any tool for this, and do NOT phrase it like a recommendation " +
                           "(never say things like \"I found...\" or \"the estimated cost is...\" for a how-to question).");
             sb.AppendLine("- Always call search_craftsmen before recommending anyone by name. Never invent a craftsman, rating, or price.");
+            sb.AppendLine("- Call search_craftsmen FRESH every time the client asks to find/suggest a craftsman, even if an earlier turn in this " +
+                          "conversation already searched that category or said nobody was found. Never answer \"no one found\" from memory - " +
+                          "only say that after actually calling the tool this turn and getting an empty result.");
             sb.AppendLine("- Always call estimate_cost before stating a price. If its confidence is 'low', say the estimate is rough.");
             sb.AppendLine("- If a tool result has locationUsed=false, mention you're showing category-only results and ask for their area.");
+            sb.AppendLine("- If a tool result has expandedSearchBeyondNearby=true, say upfront that nobody matched nearby so you widened the search - " +
+                          "these results aren't confirmed close by (mention their listed address instead of a distance).");
             sb.AppendLine("- Keep replies short and conversational. For recommendations, present at most the top 3-5 craftsmen with rating, price, and distance if known.");
+            sb.AppendLine("- If asked to compare craftsmen, only use names/details already returned by search_craftsmen in this conversation - never invent a comparison.");
+            sb.AppendLine("- If the client describes problems spanning more than one trade, call search_craftsmen/estimate_cost separately for each relevant categoryId.");
+            sb.AppendLine("- Craftsman verification (the \"Verified\" badge) is granted by MajstorHub admins after review - there is no in-app way to request it. Say so if asked, don't guess.");
             sb.AppendLine("- You can also help the client use the app itself. Only mention features from this list - never invent one:");
             sb.AppendLine("  Browse tab: search/filter craftsmen by category, with Near You / Recommended / New sections; tap a craftsman for their profile.");
             sb.AppendLine("  Craftsman profile: bio, hourly rate, reviews, a favorite (heart) toggle, and a \"Book This Craftsman\" button.");
             sb.AppendLine("  Booking a job: pin the job location (or use current GPS), describe the problem, optionally attach photos, pick a time, then confirm.");
             sb.AppendLine("  Profile tab: Favorites (saved pros), Booking history, and Settings (edit name/address/phone, change password, delete account).");
-            sb.AppendLine("  A completed booking's detail screen has a \"Leave a Review\" button.");
+            sb.AppendLine("  A completed booking's detail screen has a \"Leave a Review\" button. An Accepted booking can be cancelled from its Booking Detail screen (Cancel Booking button) any time before it's completed.");
             sb.AppendLine("  Messages tab: chat with a craftsman about a specific booking.");
         }
         else
@@ -202,9 +221,10 @@ public class ChatbotService(
                           "circumstance (e.g. who left a review, whose booking was cancelled/accepted, what's scheduled next). Never invent a client name.");
             sb.AppendLine("- Use suggest_quote before recommending a price for a job. Never invent a number.");
             sb.AppendLine("- Keep replies short, practical, and encouraging but honest.");
+            sb.AppendLine("- Verification (the \"Verified\" badge) is granted by MajstorHub admins after review - there is no in-app way to request it. Say so if asked, don't guess.");
             sb.AppendLine("- You can also help them use the app itself. Only mention features from this list - never invent one:");
             sb.AppendLine("  Dashboard tab: today/this week stats, current rating, an availability toggle, and incoming requests to accept or decline.");
-            sb.AppendLine("  Bookings tab: manage all bookings (accept, reject, complete, cancel).");
+            sb.AppendLine("  Bookings tab: manage all bookings (accept, reject, complete). An Accepted booking can also be cancelled, any time before it's completed.");
             sb.AppendLine("  Profile tab: edit the business profile (category, hourly rate, bio, years of experience, service area/location, photo).");
             sb.AppendLine("  Messages tab: chat with clients about a specific booking. Settings tab: account settings.");
         }

@@ -6,5 +6,5 @@ namespace MajstorHub.Api.Services.Chatbot;
 public interface IChatbotToolService
 {
     List<GroqToolDefinition> GetToolDefinitions(ChatbotMode mode);
-    Task<object> ExecuteAsync(string toolName, string argumentsJson, ChatbotToolContext context, CancellationToken ct = default);
+    Task<ChatbotToolExecutionResult> ExecuteAsync(string toolName, string argumentsJson, ChatbotToolContext context, CancellationToken ct = default);
 }

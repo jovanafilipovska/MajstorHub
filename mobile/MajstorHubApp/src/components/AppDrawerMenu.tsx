@@ -26,18 +26,27 @@ export function AppDrawerMenu({ visible, onClose }: Props) {
   // would unmount it instantly, cutting off the slide-out.
   const [mounted, setMounted] = useState(false);
   const translateX = useRef(new Animated.Value(DRAWER_WIDTH)).current;
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
 
   useEffect(() => {
     if (visible) {
       setMounted(true);
       Animated.timing(translateX, { toValue: 0, duration: ANIMATION_MS, useNativeDriver: true }).start();
-    } else {
-      Animated.timing(translateX, { toValue: DRAWER_WIDTH, duration: ANIMATION_MS, useNativeDriver: true }).start(
-        ({ finished }) => {
-          if (finished) setMounted(false);
-        },
-      );
+      return;
     }
+
+    Animated.timing(translateX, { toValue: DRAWER_WIDTH, duration: ANIMATION_MS, useNativeDriver: true }).start();
+    // Animated's own `finished` flag is unreliable across interruptions (e.g. a
+    // Fast Refresh reload mid-animation) - if it never reports finished:true,
+    // `mounted` gets stuck true forever, leaving this Modal's full-screen
+    // backdrop blocking the whole app. A plain timer matched to the animation
+    // duration is deterministic; the ref guard skips the unmount if the drawer
+    // was reopened before the timer fired.
+    const timeout = setTimeout(() => {
+      if (!visibleRef.current) setMounted(false);
+    }, ANIMATION_MS);
+    return () => clearTimeout(timeout);
   }, [visible, translateX]);
 
   if (!mounted) return null;

@@ -131,6 +131,7 @@ export interface ChatbotMessageResponse {
   role: ChatbotMessageRole;
   content: string;
   createdAt: string;
+  suggestions?: CraftsmanProfileResponse[];
 }
 
 export interface ChatbotConversationResponse {

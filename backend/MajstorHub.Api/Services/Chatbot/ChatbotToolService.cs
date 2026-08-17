@@ -129,27 +129,27 @@ public class ChatbotToolService(
         return tools;
     }
 
-    public async Task<object> ExecuteAsync(string toolName, string argumentsJson, ChatbotToolContext context, CancellationToken ct = default)
+    public async Task<ChatbotToolExecutionResult> ExecuteAsync(string toolName, string argumentsJson, ChatbotToolContext context, CancellationToken ct = default)
     {
         var args = ParseArgs(argumentsJson);
 
         return toolName switch
         {
             "search_craftsmen" => await SearchCraftsmenAsync(args, context),
-            "estimate_cost" => await EstimateCostAsync(args),
-            "get_my_craftsman_stats" => await GetMyCraftsmanStatsAsync(context),
-            "get_my_recent_reviews" => await GetMyRecentReviewsAsync(context),
-            "get_my_bookings" => await GetMyBookingsAsync(args, context),
+            "estimate_cost" => new ChatbotToolExecutionResult(await EstimateCostAsync(args)),
+            "get_my_craftsman_stats" => new ChatbotToolExecutionResult(await GetMyCraftsmanStatsAsync(context)),
+            "get_my_recent_reviews" => new ChatbotToolExecutionResult(await GetMyRecentReviewsAsync(context)),
+            "get_my_bookings" => new ChatbotToolExecutionResult(await GetMyBookingsAsync(args, context)),
             "get_my_favorites" => await GetMyFavoritesAsync(context),
-            "suggest_quote" => await SuggestQuoteAsync(args, context),
-            _ => new { error = $"Unknown tool '{toolName}'." }
+            "suggest_quote" => new ChatbotToolExecutionResult(await SuggestQuoteAsync(args, context)),
+            _ => new ChatbotToolExecutionResult(new { error = $"Unknown tool '{toolName}'." })
         };
     }
 
-    private async Task<object> SearchCraftsmenAsync(JsonElement args, ChatbotToolContext context)
+    private async Task<ChatbotToolExecutionResult> SearchCraftsmenAsync(JsonElement args, ChatbotToolContext context)
     {
         var categoryId = GetInt(args, "categoryId");
-        if (categoryId is null) return new { error = "categoryId is required." };
+        if (categoryId is null) return new ChatbotToolExecutionResult(new { error = "categoryId is required." });
         var radiusKm = GetDouble(args, "radiusKm") ?? DefaultRadiusKm;
 
         var usedLocation = context.Latitude is not null && context.Longitude is not null;
@@ -164,27 +164,49 @@ public class ChatbotToolService(
             profiles = await craftsmanProfileService.GetByCategoryAsync(categoryId.Value);
         }
 
+        // A craftsman with no pinned location is invisible to the nearby query
+        // above even if they're a perfect category match (e.g. they only set a
+        // free-text address). Rather than report nobody exists, widen to a
+        // category-only search and flag it so the model can be upfront that
+        // these results aren't confirmed nearby.
+        var expandedSearchBeyondNearby = false;
+        if (usedLocation && profiles.Count == 0)
+        {
+            profiles = await craftsmanProfileService.GetByCategoryAsync(categoryId.Value);
+            expandedSearchBeyondNearby = profiles.Count > 0;
+        }
+
         var ranked = profiles
             .OrderByDescending(p => p.AverageRating ?? 0)
             .ThenBy(p => DistanceKmOrNull(context, p) ?? double.MaxValue)
             .ThenBy(p => p.HourlyRate)
             .Take(MaxResults)
-            .Select(p => new
-            {
-                name = p.FullName,
-                businessName = p.BusinessName,
-                averageRating = p.AverageRating,
-                reviewCount = p.ReviewCount,
-                hourlyRate = p.HourlyRate,
-                currency = "$",
-                distanceKm = DistanceKmOrNull(context, p) is { } d ? Math.Round(d, 1) : (double?)null,
-                isVerified = p.IsVerified,
-                yearsOfExperience = p.YearsOfExperience,
-                address = p.AddressText
-            })
             .ToList();
 
-        return new { locationUsed = usedLocation, resultCount = ranked.Count, craftsmen = ranked };
+        var forModel = ranked.Select(p => new
+        {
+            userId = p.UserId,
+            name = p.FullName,
+            businessName = p.BusinessName,
+            averageRating = p.AverageRating,
+            reviewCount = p.ReviewCount,
+            hourlyRate = p.HourlyRate,
+            currency = "$",
+            distanceKm = DistanceKmOrNull(context, p) is { } d ? Math.Round(d, 1) : (double?)null,
+            isVerified = p.IsVerified,
+            yearsOfExperience = p.YearsOfExperience,
+            address = p.AddressText
+        }).ToList();
+
+        return new ChatbotToolExecutionResult(
+            new
+            {
+                locationUsed = usedLocation && !expandedSearchBeyondNearby,
+                expandedSearchBeyondNearby,
+                resultCount = forModel.Count,
+                craftsmen = forModel
+            },
+            ranked);
     }
 
     private async Task<object> EstimateCostAsync(JsonElement args)
@@ -323,12 +345,13 @@ public class ChatbotToolService(
         return new { resultCount = results.Count, bookings = results };
     }
 
-    private async Task<object> GetMyFavoritesAsync(ChatbotToolContext context)
+    private async Task<ChatbotToolExecutionResult> GetMyFavoritesAsync(ChatbotToolContext context)
     {
         var favorites = await favoriteService.GetMyFavoritesAsync(context.UserId);
-        var results = favorites
+        var forModel = favorites
             .Select(f => new
             {
+                userId = f.UserId,
                 name = f.FullName,
                 businessName = f.BusinessName,
                 serviceCategoryName = f.ServiceCategoryName,
@@ -340,7 +363,7 @@ public class ChatbotToolService(
             })
             .ToList();
 
-        return new { resultCount = results.Count, favorites = results };
+        return new ChatbotToolExecutionResult(new { resultCount = forModel.Count, favorites = forModel }, favorites);
     }
 
     private static double? DistanceKmOrNull(ChatbotToolContext context, CraftsmanProfileResponse profile)

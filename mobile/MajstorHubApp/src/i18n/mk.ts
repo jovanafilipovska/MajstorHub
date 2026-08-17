@@ -344,6 +344,7 @@ export const mk: Translations = {
     failedToSend: 'Неуспешно испраќање на пораката.',
     failedToReset: 'Неуспешно започнување нов разговор.',
     craftsmanProfileRequired: 'Постави го твојот профил на мајстор за да го користиш бизнис асистентот.',
+    viewProfile: 'Погледни профил',
   },
   roleSwitcher: {
     customer: 'Клиент',

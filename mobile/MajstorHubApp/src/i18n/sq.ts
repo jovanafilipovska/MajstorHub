@@ -344,6 +344,7 @@ export const sq: Translations = {
     failedToSend: 'Dështoi dërgimi i mesazhit tënd.',
     failedToReset: 'Dështoi fillimi i një bisede të re.',
     craftsmanProfileRequired: 'Krijo profilin tënd të mjeshtrit për të përdorur asistentin e biznesit.',
+    viewProfile: 'Shiko profilin',
   },
   roleSwitcher: {
     customer: 'Klient',

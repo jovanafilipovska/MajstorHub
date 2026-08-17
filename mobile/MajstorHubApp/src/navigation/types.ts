@@ -41,6 +41,8 @@ export type MessagesStackParamList = {
 
 export type AssistantStackParamList = {
   Chatbot: undefined;
+  CraftsmanDetail: { craftsmanUserId: string; craftsmanName?: string };
+  CreateBooking: { craftsmanUserId: string; craftsmanName: string; serviceCategoryId: number };
 };
 
 export type SettingsStackParamList = {

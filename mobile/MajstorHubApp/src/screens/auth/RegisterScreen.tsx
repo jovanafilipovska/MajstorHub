@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, HelperText, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
@@ -58,6 +58,7 @@ export function RegisterScreen({ navigation }: Props) {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <Image source={require('../../../assets/majstorhub_logo.png')} style={styles.logo} resizeMode="contain" />
       <Text variant="headlineMedium" style={styles.title}>
         {t.auth.register.title}
       </Text>
@@ -121,6 +122,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: 24,
+  },
+  logo: {
+    width: 140,
+    height: 101,
+    alignSelf: 'center',
+    marginBottom: 8,
   },
   title: {
     textAlign: 'center',

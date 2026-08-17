@@ -12,7 +12,9 @@ import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { HamburgerButton } from '../../components/HamburgerButton';
+import { ChatSuggestionCard } from '../../components/ChatSuggestionCard';
 import { apiErrorMessage, useTranslation } from '../../i18n';
+import { distanceKm } from '../../utils/geo';
 import type { AssistantStackParamList } from '../../navigation/types';
 import type { ChatbotMessageResponse, ChatbotMode } from '../../types/api';
 
@@ -25,6 +27,10 @@ interface Coordinates {
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+function formatDistance(km: number): string {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
 }
 
 export function ChatbotScreen({ navigation }: Props) {
@@ -65,7 +71,17 @@ export function ChatbotScreen({ navigation }: Props) {
     if (!token || unavailable) return;
     setError(null);
     getChatbotConversation(backendMode, token)
-      .then((response) => setMessages(response.messages))
+      .then((response) => {
+        // Suggestions only ever come back on the live send-message response,
+        // never persisted server-side - re-attach them here by message id so
+        // returning to this screen (e.g. from a suggestion's profile) doesn't
+        // wipe the cards this refetch has no way of knowing about.
+        setMessages((prev) => {
+          if (!prev) return response.messages;
+          const suggestionsById = new Map(prev.filter((m) => m.suggestions).map((m) => [m.id, m.suggestions]));
+          return response.messages.map((m) => ({ ...m, suggestions: m.suggestions ?? suggestionsById.get(m.id) }));
+        });
+      })
       .catch((err) => setError(apiErrorMessage(err, t, t.assistant.failedToLoad)));
   }, [token, backendMode, unavailable, t]);
 
@@ -184,6 +200,29 @@ export function ChatbotScreen({ navigation }: Props) {
                     {formatTime(item.createdAt)}
                   </Text>
                 </View>
+                {!isOwn && item.suggestions && item.suggestions.length > 0 && (
+                  <View style={styles.suggestionsColumn}>
+                    {item.suggestions.map((suggestion) => (
+                      <ChatSuggestionCard
+                        key={suggestion.userId}
+                        item={suggestion}
+                        distanceLabel={
+                          coords && suggestion.latitude != null && suggestion.longitude != null
+                            ? formatDistance(
+                                distanceKm(coords, { latitude: suggestion.latitude, longitude: suggestion.longitude }),
+                              )
+                            : null
+                        }
+                        onPress={() =>
+                          navigation.navigate('CraftsmanDetail', {
+                            craftsmanUserId: suggestion.userId,
+                            craftsmanName: suggestion.fullName,
+                          })
+                        }
+                      />
+                    ))}
+                  </View>
+                )}
               </View>
             </View>
           );
@@ -259,6 +298,10 @@ const styles = StyleSheet.create({
   bubbleColumn: {
     maxWidth: '85%',
     gap: 2,
+  },
+  suggestionsColumn: {
+    gap: 8,
+    paddingTop: 4,
   },
   bubble: {
     borderRadius: 16,

@@ -348,6 +348,7 @@ export const en = {
     failedToSend: 'Failed to send your message.',
     failedToReset: 'Failed to start a new chat.',
     craftsmanProfileRequired: 'Set up your craftsman profile to use the business assistant.',
+    viewProfile: 'View profile',
   },
   roleSwitcher: {
     customer: 'Customer',
