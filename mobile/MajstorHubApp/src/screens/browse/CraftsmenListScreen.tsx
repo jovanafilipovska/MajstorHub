@@ -51,7 +51,10 @@ export function CraftsmenListScreen({ route, navigation }: Props) {
         <Card
           style={styles.card}
           onPress={() =>
-            navigation.navigate('CraftsmanDetail', { craftsmanUserId: item.userId, craftsmanName: item.fullName })
+            navigation.navigate('CraftsmanDetail', {
+              craftsmanUserId: item.userId,
+              craftsmanName: item.businessName || item.fullName,
+            })
           }
         >
           {item.isVerified && (
@@ -60,7 +63,7 @@ export function CraftsmenListScreen({ route, navigation }: Props) {
             </View>
           )}
           <Card.Title
-            title={item.fullName}
+            title={item.businessName || item.fullName}
             subtitle={`$${item.hourlyRate.toFixed(2)}/hr${
               item.averageRating
                 ? ` · ${item.averageRating.toFixed(1)}★ (${item.reviewCount})`

@@ -245,7 +245,7 @@ export function CraftsmanDetailScreen({ route, navigation }: Props) {
             onPress={() =>
               navigation.navigate('CreateBooking', {
                 craftsmanUserId: profile.userId,
-                craftsmanName: profile.fullName,
+                craftsmanName: profile.businessName || profile.fullName,
                 serviceCategoryId: profile.serviceCategoryId,
               })
             }

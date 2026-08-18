@@ -61,7 +61,7 @@ export function CraftsmanCard({ item, width, distanceLabel, onPress, cornerActio
         {cornerAction && <View style={styles.cornerActionSlot}>{cornerAction}</View>}
       </View>
       <Text variant="titleSmall" numberOfLines={1} style={styles.cardName}>
-        {item.fullName}
+        {item.businessName || item.fullName}
       </Text>
       <Text variant="bodySmall" style={{ color: theme.colors.primary }} numberOfLines={1}>
         {localizedText(item.serviceCategoryNameEn, item.serviceCategoryNameMk, item.serviceCategoryNameSq, language)}
