@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Card, Icon, Text, useTheme } from 'react-native-paper';
 import { getCraftsmanProfile, getCraftsmanReviews } from '../../api/craftsmen';
+import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
@@ -81,6 +82,13 @@ export function MyReviewsScreen() {
                 {review.comment}
               </Text>
             )}
+            {review.photoUrls.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.reviewPhotoRow}>
+                {review.photoUrls.map((url) => (
+                  <Image key={url} source={{ uri: resolveMediaUrl(url) }} style={styles.reviewPhotoThumb} />
+                ))}
+              </ScrollView>
+            )}
           </Card.Content>
         </Card>
       ))}
@@ -119,5 +127,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  reviewPhotoRow: {
+    marginTop: 8,
+  },
+  reviewPhotoThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    marginRight: 8,
   },
 });

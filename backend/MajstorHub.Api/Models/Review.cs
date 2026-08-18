@@ -8,6 +8,7 @@ public class Review
     public Guid CraftsmanProfileId { get; set; }
     public int Rating { get; set; }
     public string? Comment { get; set; }
+    public List<string> PhotoUrls { get; set; } = new();
     public DateTimeOffset CreatedAt { get; set; }
 
     public Booking Booking { get; set; } = null!;

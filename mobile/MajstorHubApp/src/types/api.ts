@@ -97,6 +97,7 @@ export interface ReviewResponse {
   craftsmanProfileId: string;
   rating: number;
   comment?: string;
+  photoUrls: string[];
   createdAt: string;
 }
 

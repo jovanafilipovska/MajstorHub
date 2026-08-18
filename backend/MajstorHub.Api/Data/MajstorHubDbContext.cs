@@ -176,6 +176,7 @@ public class MajstorHubDbContext : DbContext
         modelBuilder.Entity<Review>(entity =>
         {
             entity.Property(r => r.Comment).HasMaxLength(1000);
+            entity.Property(r => r.PhotoUrls).HasDefaultValueSql("'{}'");
             entity.HasIndex(r => r.BookingId).IsUnique();
 
             entity.HasOne(r => r.Booking)

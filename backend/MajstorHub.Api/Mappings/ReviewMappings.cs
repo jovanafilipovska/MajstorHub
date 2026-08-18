@@ -16,6 +16,7 @@ public static class ReviewMappings
             CraftsmanProfileId = review.CraftsmanProfileId,
             Rating = review.Rating,
             Comment = review.Comment,
+            PhotoUrls = review.PhotoUrls,
             CreatedAt = review.CreatedAt
         };
     }

@@ -187,6 +187,8 @@ export const en = {
     commentLabel: 'Comment (optional)',
     submit: 'Submit Review',
     failedToSubmit: 'Failed to submit review.',
+    photos: 'Photos',
+    photoPermission: 'Photo library permission is required to attach photos.',
   },
   favorites: {
     empty: 'No favorite pros yet.',

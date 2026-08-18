@@ -183,6 +183,8 @@ export const sq: Translations = {
     commentLabel: 'Koment (opsionale)',
     submit: 'Dërgo vlerësimin',
     failedToSubmit: 'Dështoi dërgimi i vlerësimit.',
+    photos: 'Fotografi',
+    photoPermission: 'Kërkohet leje për galerinë e fotove për të bashkangjitur foto.',
   },
   favorites: {
     empty: 'Ende nuk ka mjeshtër të preferuar.',

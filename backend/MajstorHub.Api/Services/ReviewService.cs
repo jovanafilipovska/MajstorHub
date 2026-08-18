@@ -5,12 +5,19 @@ using MajstorHub.Api.Models;
 using MajstorHub.Api.Models.Enums;
 using MajstorHub.Api.Repositories.Interfaces;
 using MajstorHub.Api.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 
 namespace MajstorHub.Api.Services;
 
-public class ReviewService(IReviewRepository reviewRepository, IBookingRepository bookingRepository) : IReviewService
+public class ReviewService(
+    IReviewRepository reviewRepository,
+    IBookingRepository bookingRepository,
+    IFileStorageService fileStorageService) : IReviewService
 {
-    public async Task<ReviewResponse> CreateAsync(Guid reviewerUserId, CreateReviewRequest request)
+    private static readonly string[] AllowedImageExtensions = [".jpg", ".jpeg", ".png"];
+    private const int MaxPhotosPerReview = 6;
+
+    public async Task<ReviewResponse> CreateAsync(Guid reviewerUserId, CreateReviewRequest request, List<IFormFile> files)
     {
         var booking = await bookingRepository.GetByIdWithDetailsAsync(request.BookingId)
             ?? throw new NotFoundException($"Booking '{request.BookingId}' was not found.");
@@ -30,6 +37,20 @@ public class ReviewService(IReviewRepository reviewRepository, IBookingRepositor
             throw new ConflictException("This booking has already been reviewed.");
         }
 
+        if (files.Count > MaxPhotosPerReview)
+        {
+            throw new ValidationException($"A review can have at most {MaxPhotosPerReview} photos.");
+        }
+
+        foreach (var file in files)
+        {
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!AllowedImageExtensions.Contains(extension))
+            {
+                throw new ValidationException("Only JPG and PNG images are supported.");
+            }
+        }
+
         var review = new Review
         {
             Id = Guid.NewGuid(),
@@ -40,6 +61,17 @@ public class ReviewService(IReviewRepository reviewRepository, IBookingRepositor
             Comment = request.Comment,
             CreatedAt = DateTimeOffset.UtcNow
         };
+
+        foreach (var file in files)
+        {
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var fileName = $"{Guid.NewGuid()}{extension}";
+
+            await using var stream = file.OpenReadStream();
+            var photoUrl = await fileStorageService.UploadAsync($"reviews/{review.Id}/{fileName}", stream, file.ContentType);
+
+            review.PhotoUrls.Add(photoUrl);
+        }
 
         await reviewRepository.AddAsync(review);
         await reviewRepository.SaveChangesAsync();

@@ -183,6 +183,8 @@ export const mk: Translations = {
     commentLabel: 'Коментар (опционално)',
     submit: 'Испрати рецензија',
     failedToSubmit: 'Неуспешно испраќање на рецензијата.',
+    photos: 'Фотографии',
+    photoPermission: 'Потребна е дозвола за пристап до фотографии за да прикачите слики.',
   },
   favorites: {
     empty: 'Сè уште нема омилени мајстори.',

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -212,6 +212,13 @@ export function CraftsmanDetailScreen({ route, navigation }: Props) {
                     {review.comment}
                   </Text>
                 )}
+                {review.photoUrls.length > 0 && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.reviewPhotoRow}>
+                    {review.photoUrls.map((url) => (
+                      <Image key={url} source={{ uri: resolveMediaUrl(url) }} style={styles.reviewPhotoThumb} />
+                    ))}
+                  </ScrollView>
+                )}
               </Card.Content>
             </Card>
           ))}
@@ -325,6 +332,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
+  },
+  reviewPhotoRow: {
+    marginTop: 8,
+  },
+  reviewPhotoThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    marginRight: 8,
   },
   footerSpacer: {
     height: 88,
