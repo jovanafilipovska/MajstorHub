@@ -9,6 +9,7 @@ import { listServiceCategories } from '../../api/serviceCategories';
 import { listAllCraftsmen, listCraftsmenByCategory } from '../../api/craftsmen';
 import { getMyBookings } from '../../api/bookings';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { distanceKm } from '../../utils/geo';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
@@ -16,6 +17,7 @@ import { CraftsmanCard } from '../../components/CraftsmanCard';
 import { HamburgerButton } from '../../components/HamburgerButton';
 import { TabBackButton } from '../../components/TabBackButton';
 import { apiErrorMessage, useTranslation } from '../../i18n';
+import { getCategoryName, localizedText } from '../../utils/categoryName';
 import type { BrowseStackParamList } from '../../navigation/types';
 import type { BookingResponse, CraftsmanProfileResponse, ServiceCategoryResponse } from '../../types/api';
 
@@ -54,6 +56,7 @@ export function HomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const t = useTranslation();
   const { user, token } = useAuth();
+  const { language } = useLanguage();
   const { width } = useWindowDimensions();
   const searchCardWidth = (width - GRID_PADDING * 2 - GRID_GAP) / 2;
 
@@ -119,8 +122,13 @@ export function HomeScreen({ navigation }: Props) {
 
   const chipItems = useMemo(
     (): { id: CategoryFilter; name: string }[] =>
-      categories ? [{ id: 'all', name: t.home.categoryAll }, ...categories] : [],
-    [categories, t],
+      categories
+        ? [
+            { id: 'all' as const, name: t.home.categoryAll },
+            ...categories.map((c) => ({ id: c.id, name: getCategoryName(c, language) })),
+          ]
+        : [],
+    [categories, t, language],
   );
 
   const filtered = useMemo(() => {
@@ -128,9 +136,13 @@ export function HomeScreen({ navigation }: Props) {
     const q = query.trim().toLowerCase();
     if (!q) return craftsmen;
     return craftsmen.filter(
-      (item) => item.fullName.toLowerCase().includes(q) || item.serviceCategoryName.toLowerCase().includes(q),
+      (item) =>
+        item.fullName.toLowerCase().includes(q) ||
+        localizedText(item.serviceCategoryNameEn, item.serviceCategoryNameMk, item.serviceCategoryNameSq, language)
+          .toLowerCase()
+          .includes(q),
     );
-  }, [craftsmen, query]);
+  }, [craftsmen, query, language]);
 
   const newToMajstorHub = useMemo(
     () =>

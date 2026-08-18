@@ -81,9 +81,13 @@ public class MajstorHubDbContext : DbContext
     {
         modelBuilder.Entity<ServiceCategory>(entity =>
         {
-            entity.Property(s => s.Name).HasMaxLength(100).IsRequired();
-            entity.Property(s => s.Description).HasMaxLength(500);
-            entity.HasIndex(s => s.Name).IsUnique();
+            entity.Property(s => s.NameEn).HasMaxLength(100).IsRequired();
+            entity.Property(s => s.NameMk).HasMaxLength(100).IsRequired();
+            entity.Property(s => s.NameSq).HasMaxLength(100).IsRequired();
+            entity.Property(s => s.DescriptionEn).HasMaxLength(500);
+            entity.Property(s => s.DescriptionMk).HasMaxLength(500);
+            entity.Property(s => s.DescriptionSq).HasMaxLength(500);
+            entity.HasIndex(s => s.NameEn).IsUnique();
 
             entity.HasOne(s => s.SuggestedByUser)
                 .WithMany()
@@ -91,11 +95,51 @@ public class MajstorHubDbContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasData(
-                new ServiceCategory { Id = 1, Name = "Electrician", Description = "Electrical installation and repair", IsApproved = true },
-                new ServiceCategory { Id = 2, Name = "Plumber", Description = "Plumbing installation and repair", IsApproved = true },
-                new ServiceCategory { Id = 3, Name = "Carpenter", Description = "Woodwork and furniture", IsApproved = true },
-                new ServiceCategory { Id = 4, Name = "Painter", Description = "Interior and exterior painting", IsApproved = true },
-                new ServiceCategory { Id = 5, Name = "Cleaner", Description = "Home and office cleaning", IsApproved = true }
+                new ServiceCategory
+                {
+                    Id = 1,
+                    NameEn = "Electrician", NameMk = "Електричар", NameSq = "Elektricist",
+                    DescriptionEn = "Electrical installation and repair",
+                    DescriptionMk = "Монтажа и поправка на електрична инсталација",
+                    DescriptionSq = "Instalim dhe riparim i instalimeve elektrike",
+                    IsApproved = true
+                },
+                new ServiceCategory
+                {
+                    Id = 2,
+                    NameEn = "Plumber", NameMk = "Водоинсталатер", NameSq = "Hidraulik",
+                    DescriptionEn = "Plumbing installation and repair",
+                    DescriptionMk = "Монтажа и поправка на водоводна инсталација",
+                    DescriptionSq = "Instalim dhe riparim i instalimeve hidraulike",
+                    IsApproved = true
+                },
+                new ServiceCategory
+                {
+                    Id = 3,
+                    NameEn = "Carpenter", NameMk = "Столар", NameSq = "Marangoz",
+                    DescriptionEn = "Woodwork and furniture",
+                    DescriptionMk = "Столарски работи и мебел",
+                    DescriptionSq = "Punime druri dhe mobilje",
+                    IsApproved = true
+                },
+                new ServiceCategory
+                {
+                    Id = 4,
+                    NameEn = "Painter", NameMk = "Молер", NameSq = "Bojaxhi",
+                    DescriptionEn = "Interior and exterior painting",
+                    DescriptionMk = "Молерисување - внатрешно и надворешно",
+                    DescriptionSq = "Lyerje e brendshme dhe e jashtme",
+                    IsApproved = true
+                },
+                new ServiceCategory
+                {
+                    Id = 5,
+                    NameEn = "Cleaner", NameMk = "Чистач", NameSq = "Pastrues",
+                    DescriptionEn = "Home and office cleaning",
+                    DescriptionMk = "Чистење на дом и канцеларии",
+                    DescriptionSq = "Pastrim shtëpie dhe zyre",
+                    IsApproved = true
+                }
             );
         });
     }

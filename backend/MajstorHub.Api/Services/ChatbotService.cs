@@ -166,9 +166,11 @@ public class ChatbotService(
 
     private static string BuildSystemPrompt(ChatbotMode mode, List<ServiceCategory> categories, User user, CraftsmanProfile? craftsmanProfile)
     {
-        var categoryList = string.Join(", ", categories.Select(c => $"{c.Id}={c.Name}"));
+        var categoryList = string.Join(", ", categories.Select(c => $"{c.Id}={c.NameEn}"));
 
         var sb = new StringBuilder();
+        sb.AppendLine("Any scheduledAt/createdAt timestamps returned by tools are already converted to the user's local time " +
+                      "zone (Central European Time) - report them as-is and never add/subtract hours or mention UTC.");
         if (mode == ChatbotMode.Client)
         {
             var location = string.Join(", ", new[] { user.Street, user.City, user.Country }.Where(p => !string.IsNullOrWhiteSpace(p)));

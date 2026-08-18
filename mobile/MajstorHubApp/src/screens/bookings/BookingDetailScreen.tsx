@@ -7,12 +7,14 @@ import { Avatar, Button, Dialog, HelperText, Icon, Portal, Text, useTheme } from
 import { getBooking, updateBookingStatus } from '../../api/bookings';
 import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { StatusBadge } from '../../components/StatusBadge';
 import { openDirections } from '../../utils/directions';
 import { apiErrorMessage, useTranslation } from '../../i18n';
+import { localizedText } from '../../utils/categoryName';
 import type { Translations } from '../../i18n';
 import type { BookingsStackParamList } from '../../navigation/types';
 import type { BookingResponse, BookingStatus } from '../../types/api';
@@ -90,6 +92,7 @@ function DetailRow({ icon, label, value }: { icon: string; label: string; value:
 export function BookingDetailScreen({ route, navigation }: Props) {
   const { bookingId } = route.params;
   const { user, token } = useAuth();
+  const { language } = useLanguage();
   const theme = useTheme();
   const t = useTranslation();
   const insets = useSafeAreaInsets();
@@ -163,7 +166,7 @@ export function BookingDetailScreen({ route, navigation }: Props) {
           <View style={styles.partyText}>
             <Text variant="titleMedium">{otherPartyName}</Text>
             <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-              {booking.serviceCategoryName}
+              {localizedText(booking.serviceCategoryNameEn, booking.serviceCategoryNameMk, booking.serviceCategoryNameSq, language)}
             </Text>
           </View>
         </View>

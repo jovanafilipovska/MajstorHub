@@ -129,7 +129,9 @@ public class MessageService(
             {
                 BookingId = booking.Id,
                 BookingStatus = booking.Status,
-                ServiceCategoryName = booking.ServiceCategory.Name,
+                ServiceCategoryNameEn = booking.ServiceCategory.NameEn,
+                ServiceCategoryNameMk = booking.ServiceCategory.NameMk,
+                ServiceCategoryNameSq = booking.ServiceCategory.NameSq,
                 ClientId = booking.ClientId,
                 CraftsmanProfileId = booking.CraftsmanProfileId,
                 OtherPartyId = isClient ? booking.CraftsmanProfileId : booking.ClientId,

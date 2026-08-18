@@ -25,8 +25,12 @@ export interface AuthResponse {
 
 export interface ServiceCategoryResponse {
   id: number;
-  name: string;
-  description?: string;
+  nameEn: string;
+  nameMk: string;
+  nameSq: string;
+  descriptionEn?: string;
+  descriptionMk?: string;
+  descriptionSq?: string;
   isApproved: boolean;
 }
 
@@ -42,7 +46,9 @@ export interface CraftsmanProfileResponse {
   fullName: string;
   profileImageUrl?: string;
   serviceCategoryId: number;
-  serviceCategoryName: string;
+  serviceCategoryNameEn: string;
+  serviceCategoryNameMk: string;
+  serviceCategoryNameSq: string;
   businessName?: string;
   bio?: string;
   hourlyRate: number;
@@ -67,7 +73,9 @@ export interface BookingResponse {
   craftsmanName: string;
   craftsmanProfileImageUrl?: string;
   serviceCategoryId: number;
-  serviceCategoryName: string;
+  serviceCategoryNameEn: string;
+  serviceCategoryNameMk: string;
+  serviceCategoryNameSq: string;
   description: string;
   address: string;
   latitude?: number;
@@ -112,7 +120,9 @@ export interface SendMessageRequest {
 export interface ConversationSummaryResponse {
   bookingId: string;
   bookingStatus: BookingStatus;
-  serviceCategoryName: string;
+  serviceCategoryNameEn: string;
+  serviceCategoryNameMk: string;
+  serviceCategoryNameSq: string;
   clientId: string;
   craftsmanProfileId: string;
   otherPartyId: string;

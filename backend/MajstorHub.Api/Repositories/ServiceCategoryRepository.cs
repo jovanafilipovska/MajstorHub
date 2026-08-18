@@ -8,9 +8,15 @@ namespace MajstorHub.Api.Repositories;
 public class ServiceCategoryRepository(MajstorHubDbContext context)
     : Repository<ServiceCategory, int>(context), IServiceCategoryRepository
 {
-    public async Task<ServiceCategory?> GetByNameAsync(string name)
+    public async Task<ServiceCategory?> FindByAnyNameAsync(string nameEn, string nameMk, string nameSq)
     {
-        return await DbSet.FirstOrDefaultAsync(c => c.Name == name);
+        var candidates = new[] { nameEn, nameMk, nameSq };
+        var categories = await DbSet.ToListAsync();
+        return categories.FirstOrDefault(c =>
+            candidates.Any(candidate =>
+                string.Equals(candidate, c.NameEn, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(candidate, c.NameMk, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(candidate, c.NameSq, StringComparison.OrdinalIgnoreCase)));
     }
 
     public async Task<List<ServiceCategory>> GetApprovedAsync()

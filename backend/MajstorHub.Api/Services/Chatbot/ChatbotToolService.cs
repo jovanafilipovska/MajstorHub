@@ -18,6 +18,28 @@ public class ChatbotToolService(
     private const double DefaultRadiusKm = 25;
     private const int MinSampleForConfidentEstimate = 3;
 
+    // Booking/review timestamps are stored in UTC; the app's users are in North
+    // Macedonia/Albania, so convert to CET/CEST before handing dates to the model -
+    // otherwise it reads the raw UTC hour as if it were local time and answers wrong.
+    private static readonly TimeZoneInfo LocalTimeZone = ResolveLocalTimeZone();
+
+    private static TimeZoneInfo ResolveLocalTimeZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time"); // Windows id
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Europe/Skopje"); // IANA id (Linux/containers)
+        }
+    }
+
+    private static DateTimeOffset? ToLocal(DateTimeOffset? utc) =>
+        utc is { } value ? TimeZoneInfo.ConvertTime(value, LocalTimeZone) : null;
+
+    private static DateTimeOffset ToLocal(DateTimeOffset utc) => TimeZoneInfo.ConvertTime(utc, LocalTimeZone);
+
     public List<GroqToolDefinition> GetToolDefinitions(ChatbotMode mode)
     {
         var tools = new List<GroqToolDefinition>
@@ -304,7 +326,7 @@ public class ChatbotToolService(
         var recent = reviews
             .OrderByDescending(r => r.CreatedAt)
             .Take(10)
-            .Select(r => new { clientName = r.Reviewer.FullName, rating = r.Rating, comment = r.Comment, createdAt = r.CreatedAt })
+            .Select(r => new { clientName = r.Reviewer.FullName, rating = r.Rating, comment = r.Comment, createdAt = ToLocal(r.CreatedAt) })
             .ToList();
 
         return new { reviewCount = reviews.Count, recentReviews = recent };
@@ -331,14 +353,14 @@ public class ChatbotToolService(
             {
                 otherPartyName = context.Mode == ChatbotMode.Craftsman ? b.Client.FullName : b.CraftsmanProfile.User.FullName,
                 status = b.Status.ToString(),
-                serviceCategoryName = b.ServiceCategory.Name,
+                serviceCategoryName = b.ServiceCategory.NameEn,
                 description = b.Description,
                 address = b.Address,
-                scheduledAt = b.ScheduledAt,
+                scheduledAt = ToLocal(b.ScheduledAt),
                 priceQuote = b.PriceQuote,
                 currency = "$",
                 hasReview = b.Review is not null,
-                createdAt = b.CreatedAt
+                createdAt = ToLocal(b.CreatedAt)
             })
             .ToList();
 
@@ -354,7 +376,7 @@ public class ChatbotToolService(
                 userId = f.UserId,
                 name = f.FullName,
                 businessName = f.BusinessName,
-                serviceCategoryName = f.ServiceCategoryName,
+                serviceCategoryName = f.ServiceCategoryNameEn,
                 averageRating = f.AverageRating,
                 reviewCount = f.ReviewCount,
                 hourlyRate = f.HourlyRate,

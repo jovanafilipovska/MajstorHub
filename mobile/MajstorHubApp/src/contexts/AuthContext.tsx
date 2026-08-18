@@ -12,6 +12,15 @@ interface AuthContextValue {
   token: string | null;
   user: UserResponse | null;
   isLoading: boolean;
+  // The backend always saves a user's avatar to the same deterministic filename,
+  // so profileImageUrl never changes between uploads and callers can't cache-bust
+  // off the URL alone - this is set to Date.now() every time refreshUser() pulls
+  // fresh data, so screens can append it as a query param to force a fresh fetch.
+  // Must be a real timestamp, not a small incrementing counter: a counter resets
+  // to 0 on every app reload, so it would eventually reproduce an exact query
+  // string used in an earlier session, letting the device's image cache silently
+  // serve those old cached bytes instead of re-fetching.
+  avatarVersion: number;
   login: (payload: LoginRequest) => Promise<void>;
   register: (payload: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
@@ -24,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<UserResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [avatarVersion, setAvatarVersion] = useState(() => Date.now());
 
   const logout = useCallback(async () => {
     await SecureStore.deleteItemAsync(SECURE_STORE_KEY);
@@ -75,11 +85,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!token) return;
     const me = await getMe(token);
     setUser(me);
+    setAvatarVersion(Date.now());
   }, [token]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ token, user, isLoading, login, register, logout, refreshUser }),
-    [token, user, isLoading, login, register, logout, refreshUser],
+    () => ({ token, user, isLoading, avatarVersion, login, register, logout, refreshUser }),
+    [token, user, isLoading, avatarVersion, login, register, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

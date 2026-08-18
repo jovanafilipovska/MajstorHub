@@ -12,7 +12,9 @@ public class BookingResponse
     public string CraftsmanName { get; set; } = string.Empty;
     public string? CraftsmanProfileImageUrl { get; set; }
     public int ServiceCategoryId { get; set; }
-    public string ServiceCategoryName { get; set; } = string.Empty;
+    public string ServiceCategoryNameEn { get; set; } = string.Empty;
+    public string ServiceCategoryNameMk { get; set; } = string.Empty;
+    public string ServiceCategoryNameSq { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
     public double? Latitude { get; set; }

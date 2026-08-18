@@ -43,7 +43,7 @@ function StatTile({ label, value, onPress }: { label: string; value: number | nu
 }
 
 export function ProfileScreen({ navigation }: Props) {
-  const { user, token, refreshUser } = useAuth();
+  const { user, token, refreshUser, avatarVersion } = useAuth();
   const theme = useTheme();
   const t = useTranslation();
 
@@ -136,7 +136,10 @@ export function ProfileScreen({ navigation }: Props) {
                 style={styles.avatarTouchable}
               >
                 {user.profileImageUrl ? (
-                  <Avatar.Image size={88} source={{ uri: resolveMediaUrl(user.profileImageUrl) }} />
+                  <Avatar.Image
+                    size={88}
+                    source={{ uri: `${resolveMediaUrl(user.profileImageUrl)}${avatarVersion ? `?v=${avatarVersion}` : ''}` }}
+                  />
                 ) : (
                   <Avatar.Text
                     size={88}

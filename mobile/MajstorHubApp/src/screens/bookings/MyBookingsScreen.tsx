@@ -6,11 +6,13 @@ import { Avatar, Card, Chip, Text, useTheme } from 'react-native-paper';
 import { getMyBookings } from '../../api/bookings';
 import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useWorkMode } from '../../contexts/WorkModeContext';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { StatusBadge } from '../../components/StatusBadge';
 import { apiErrorMessage, useTranslation } from '../../i18n';
+import { localizedText } from '../../utils/categoryName';
 import type { BookingsStackParamList } from '../../navigation/types';
 import type { BookingResponse, BookingStatus } from '../../types/api';
 
@@ -30,6 +32,7 @@ function initialsOf(fullName: string): string {
 export function MyBookingsScreen({ navigation }: Props) {
   const { user, token } = useAuth();
   const { mode } = useWorkMode();
+  const { language } = useLanguage();
   const theme = useTheme();
   const t = useTranslation();
   const [bookings, setBookings] = useState<BookingResponse[] | null>(null);
@@ -104,7 +107,7 @@ export function MyBookingsScreen({ navigation }: Props) {
           <Card style={styles.card} onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })}>
             <Card.Title
               title={otherPartyName}
-              subtitle={item.serviceCategoryName}
+              subtitle={localizedText(item.serviceCategoryNameEn, item.serviceCategoryNameMk, item.serviceCategoryNameSq, language)}
               left={(props) =>
                 otherPartyImageUrl ? (
                   <Avatar.Image size={props.size} source={{ uri: resolveMediaUrl(otherPartyImageUrl) }} />

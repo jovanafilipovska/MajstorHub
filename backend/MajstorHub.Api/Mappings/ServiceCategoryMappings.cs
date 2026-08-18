@@ -10,8 +10,12 @@ public static class ServiceCategoryMappings
         return new ServiceCategoryResponse
         {
             Id = category.Id,
-            Name = category.Name,
-            Description = category.Description,
+            NameEn = category.NameEn,
+            NameMk = category.NameMk,
+            NameSq = category.NameSq,
+            DescriptionEn = category.DescriptionEn,
+            DescriptionMk = category.DescriptionMk,
+            DescriptionSq = category.DescriptionSq,
             IsApproved = category.IsApproved
         };
     }

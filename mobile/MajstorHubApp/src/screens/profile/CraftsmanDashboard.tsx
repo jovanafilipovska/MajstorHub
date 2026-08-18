@@ -56,7 +56,7 @@ interface Props {
 }
 
 export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBookingsChange, onViewReviews }: Props) {
-  const { user, token } = useAuth();
+  const { user, token, avatarVersion } = useAuth();
   const theme = useTheme();
   const t = useTranslation();
   const [toggling, setToggling] = useState(false);
@@ -106,7 +106,10 @@ export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBooki
     <View style={styles.container}>
       <View style={styles.welcomeRow}>
         {user?.profileImageUrl ? (
-          <Avatar.Image size={48} source={{ uri: resolveMediaUrl(user.profileImageUrl) }} />
+          <Avatar.Image
+            size={48}
+            source={{ uri: `${resolveMediaUrl(user.profileImageUrl)}${avatarVersion ? `?v=${avatarVersion}` : ''}` }}
+          />
         ) : (
           <Avatar.Text
             size={48}

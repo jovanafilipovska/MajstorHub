@@ -1,7 +1,9 @@
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Icon, Text, useTheme } from 'react-native-paper';
 import { resolveMediaUrl } from '../api/client';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslation } from '../i18n';
+import { localizedText } from '../utils/categoryName';
 import type { CraftsmanProfileResponse } from '../types/api';
 
 interface ChatSuggestionCardProps {
@@ -13,9 +15,10 @@ interface ChatSuggestionCardProps {
 export function ChatSuggestionCard({ item, distanceLabel, onPress }: ChatSuggestionCardProps) {
   const theme = useTheme();
   const t = useTranslation();
+  const { language } = useLanguage();
 
   const metaParts = [
-    item.serviceCategoryName,
+    localizedText(item.serviceCategoryNameEn, item.serviceCategoryNameMk, item.serviceCategoryNameSq, language),
     item.averageRating ? `★ ${item.averageRating.toFixed(1)}` : t.craftsmanCard.noRatingsYet,
     distanceLabel,
   ].filter((part): part is string => !!part);

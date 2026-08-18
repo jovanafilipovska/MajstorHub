@@ -11,15 +11,18 @@ import {
   updateServiceCategory,
 } from '../../api/serviceCategories';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { apiErrorMessage, useTranslation } from '../../i18n';
+import { getCategoryDescription, getCategoryName } from '../../utils/categoryName';
 import type { ServiceCategoryResponse } from '../../types/api';
 
 export function AdminCategoriesScreen() {
   const { token } = useAuth();
   const t = useTranslation();
+  const { language } = useLanguage();
   const [categories, setCategories] = useState<ServiceCategoryResponse[] | null>(null);
   const [pending, setPending] = useState<ServiceCategoryResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -111,8 +114,8 @@ export function AdminCategoriesScreen() {
 
   const openEdit = (category: ServiceCategoryResponse) => {
     setEditingId(category.id);
-    setName(category.name);
-    setDescription(category.description ?? '');
+    setName(category.nameEn);
+    setDescription(category.descriptionEn ?? '');
     setAddError(null);
     setDialogVisible(true);
   };
@@ -163,7 +166,7 @@ export function AdminCategoriesScreen() {
               <Text variant="titleMedium">{t.adminCategories.pendingApproval}</Text>
               {pending.map((item) => (
                 <Card key={item.id} style={styles.card}>
-                  <Card.Title title={item.name} subtitle={item.description} />
+                  <Card.Title title={getCategoryName(item, language)} subtitle={getCategoryDescription(item, language)} />
                   <Card.Actions>
                     <Button
                       onPress={() => reject(item.id)}
@@ -193,8 +196,8 @@ export function AdminCategoriesScreen() {
         renderItem={({ item }) => (
           <Card style={styles.card} onPress={() => openEdit(item)}>
             <Card.Title
-              title={item.name}
-              subtitle={item.description}
+              title={getCategoryName(item, language)}
+              subtitle={getCategoryDescription(item, language)}
               right={(props) => (
                 <IconButton {...props} icon="delete" onPress={() => setPendingDeleteId(item.id)} />
               )}

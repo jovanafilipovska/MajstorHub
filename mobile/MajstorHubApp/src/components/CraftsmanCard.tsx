@@ -2,7 +2,9 @@ import type { ReactNode } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Icon, Text, useTheme } from 'react-native-paper';
 import { resolveMediaUrl } from '../api/client';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslation } from '../i18n';
+import { localizedText } from '../utils/categoryName';
 import type { CraftsmanProfileResponse } from '../types/api';
 import { GrayscaleImage } from './GrayscaleImage';
 
@@ -27,6 +29,7 @@ interface CraftsmanCardProps {
 export function CraftsmanCard({ item, width, distanceLabel, onPress, cornerAction }: CraftsmanCardProps) {
   const theme = useTheme();
   const t = useTranslation();
+  const { language } = useLanguage();
   return (
     <Pressable onPress={onPress} style={[styles.gridCard, { width, backgroundColor: theme.colors.surface }]}>
       <View style={styles.imageWrapper}>
@@ -61,7 +64,7 @@ export function CraftsmanCard({ item, width, distanceLabel, onPress, cornerActio
         {item.fullName}
       </Text>
       <Text variant="bodySmall" style={{ color: theme.colors.primary }} numberOfLines={1}>
-        {item.serviceCategoryName}
+        {localizedText(item.serviceCategoryNameEn, item.serviceCategoryNameMk, item.serviceCategoryNameSq, language)}
         {item.addressText ? ` · ${item.addressText}` : ''}
       </Text>
       {distanceLabel && (

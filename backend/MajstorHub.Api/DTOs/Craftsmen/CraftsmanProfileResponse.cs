@@ -6,7 +6,9 @@ public class CraftsmanProfileResponse
     public string FullName { get; set; } = string.Empty;
     public string? ProfileImageUrl { get; set; }
     public int ServiceCategoryId { get; set; }
-    public string ServiceCategoryName { get; set; } = string.Empty;
+    public string ServiceCategoryNameEn { get; set; } = string.Empty;
+    public string ServiceCategoryNameMk { get; set; } = string.Empty;
+    public string ServiceCategoryNameSq { get; set; } = string.Empty;
     public string? BusinessName { get; set; }
     public string? Bio { get; set; }
     public decimal HourlyRate { get; set; }

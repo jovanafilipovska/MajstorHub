@@ -8,10 +8,12 @@ import { getCraftsmanProfile, getCraftsmanReviews, recordProfileView } from '../
 import { addFavorite, listFavorites, removeFavorite } from '../../api/favorites';
 import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { LoadingView } from '../../components/LoadingView';
 import { ErrorView } from '../../components/ErrorView';
 import { apiErrorMessage, useTranslation } from '../../i18n';
 import { starRatingColor } from '../../theme';
+import { localizedText } from '../../utils/categoryName';
 import type { BrowseStackParamList } from '../../navigation/types';
 import type { CraftsmanProfileResponse, ReviewResponse } from '../../types/api';
 
@@ -29,6 +31,7 @@ function initialsOf(fullName: string): string {
 export function CraftsmanDetailScreen({ route, navigation }: Props) {
   const { craftsmanUserId } = route.params;
   const { user, token } = useAuth();
+  const { language } = useLanguage();
   const theme = useTheme();
   const t = useTranslation();
   const insets = useSafeAreaInsets();
@@ -63,7 +66,8 @@ export function CraftsmanDetailScreen({ route, navigation }: Props) {
   const isOwnProfile = user?.id === profile.userId;
   const canBook = !isOwnProfile && profile.isAvailable;
   const goldColor = theme.dark ? starRatingColor.dark : starRatingColor.light;
-  const locationLabel = [profile.serviceCategoryName, profile.addressText].filter(Boolean).join(' · ');
+  const categoryName = localizedText(profile.serviceCategoryNameEn, profile.serviceCategoryNameMk, profile.serviceCategoryNameSq, language);
+  const locationLabel = [categoryName, profile.addressText].filter(Boolean).join(' · ');
 
   const toggleFavorite = async () => {
     if (!token) return;

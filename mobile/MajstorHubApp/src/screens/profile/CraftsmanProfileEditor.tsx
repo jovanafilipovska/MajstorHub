@@ -26,11 +26,13 @@ import { listServiceCategories, suggestServiceCategory } from '../../api/service
 import { changeMyPassword, deleteMe, removeMyPhoto, uploadMyPhoto } from '../../api/users';
 import { ApiError, resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useWorkMode } from '../../contexts/WorkModeContext';
 import { useAutoDismiss } from '../../hooks/useAutoDismiss';
 import { LoadingView } from '../../components/LoadingView';
 import { RoleSwitcher } from '../../components/RoleSwitcher';
 import { apiErrorMessage, useTranslation } from '../../i18n';
+import { getCategoryName } from '../../utils/categoryName';
 import type { CraftsmanProfileResponse, ServiceCategoryResponse } from '../../types/api';
 
 function initialsOf(fullName: string): string {
@@ -43,8 +45,9 @@ function initialsOf(fullName: string): string {
 }
 
 export function CraftsmanProfileEditor() {
-  const { user, token, refreshUser, logout } = useAuth();
+  const { user, token, refreshUser, avatarVersion, logout } = useAuth();
   const { refreshHasCraftsmanProfile } = useWorkMode();
+  const { language } = useLanguage();
   const theme = useTheme();
   const t = useTranslation();
   const insets = useSafeAreaInsets();
@@ -63,11 +66,6 @@ export function CraftsmanProfileEditor() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [addressText, setAddressText] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  // The backend always saves the avatar to the same deterministic filename
-  // (userId + extension), so the URL never changes between uploads and the
-  // Image component's cache would otherwise keep showing the old bytes -
-  // this nonce busts that cache after every upload/remove.
-  const [photoVersion, setPhotoVersion] = useState(0);
   const [photoMenuVisible, setPhotoMenuVisible] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +132,13 @@ export function CraftsmanProfileEditor() {
           // Own category is still pending admin approval, so it won't be in the public list yet.
           categoriesResult = [
             ...categoriesResult,
-            { id: profile.serviceCategoryId, name: profile.serviceCategoryName, isApproved: false },
+            {
+              id: profile.serviceCategoryId,
+              nameEn: profile.serviceCategoryNameEn,
+              nameMk: profile.serviceCategoryNameMk,
+              nameSq: profile.serviceCategoryNameSq,
+              isApproved: false,
+            },
           ];
         }
         setCategories(categoriesResult);
@@ -209,7 +213,6 @@ export function CraftsmanProfileEditor() {
     try {
       await uploadMyPhoto(result.assets[0].uri, token);
       await refreshUser();
-      setPhotoVersion((v) => v + 1);
     } catch (err) {
       setError(apiErrorMessage(err, t, t.craftsmanProfileEditor.errors.failedToUpdatePhoto));
     } finally {
@@ -225,7 +228,6 @@ export function CraftsmanProfileEditor() {
     try {
       await removeMyPhoto(token);
       await refreshUser();
-      setPhotoVersion((v) => v + 1);
     } catch (err) {
       setError(apiErrorMessage(err, t, t.craftsmanProfileEditor.errors.failedToRemovePhoto));
     } finally {
@@ -352,7 +354,8 @@ export function CraftsmanProfileEditor() {
     }
   };
 
-  const selectedCategoryName = categories.find((c) => c.id === categoryId)?.name;
+  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const selectedCategoryName = selectedCategory ? getCategoryName(selectedCategory, language) : undefined;
 
   return (
     <View style={styles.root}>
@@ -373,7 +376,7 @@ export function CraftsmanProfileEditor() {
                     <Avatar.Image
                       size={88}
                       source={{
-                        uri: `${resolveMediaUrl(user.profileImageUrl)}${photoVersion ? `?v=${photoVersion}` : ''}`,
+                        uri: `${resolveMediaUrl(user.profileImageUrl)}${avatarVersion ? `?v=${avatarVersion}` : ''}`,
                       }}
                     />
                   ) : (
@@ -447,7 +450,7 @@ export function CraftsmanProfileEditor() {
                     }}
                     textStyle={{ color: selected ? theme.colors.onPrimary : theme.colors.onSurface }}
                   >
-                    {category.name}
+                    {getCategoryName(category, language)}
                   </Chip>
                 );
               })}

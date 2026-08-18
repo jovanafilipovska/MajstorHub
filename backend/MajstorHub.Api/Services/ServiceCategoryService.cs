@@ -1,3 +1,4 @@
+using MajstorHub.Api.Ai;
 using MajstorHub.Api.DTOs.ServiceCategories;
 using MajstorHub.Api.Exceptions;
 using MajstorHub.Api.Mappings;
@@ -8,7 +9,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MajstorHub.Api.Services;
 
-public class ServiceCategoryService(IServiceCategoryRepository serviceCategoryRepository) : IServiceCategoryService
+public class ServiceCategoryService(
+    IServiceCategoryRepository serviceCategoryRepository,
+    ITranslationService translationService) : IServiceCategoryService
 {
     public async Task<List<ServiceCategoryResponse>> GetAllAsync()
     {
@@ -31,15 +34,21 @@ public class ServiceCategoryService(IServiceCategoryRepository serviceCategoryRe
 
     public async Task<ServiceCategoryResponse> CreateAsync(CreateServiceCategoryRequest request)
     {
-        if (await serviceCategoryRepository.GetByNameAsync(request.Name) is not null)
+        var translation = await translationService.TranslateCategoryAsync(request.Name, request.Description);
+
+        if (await serviceCategoryRepository.FindByAnyNameAsync(translation.NameEn, translation.NameMk, translation.NameSq) is not null)
         {
             throw new ConflictException($"A service category named '{request.Name}' already exists.");
         }
 
         var category = new ServiceCategory
         {
-            Name = request.Name,
-            Description = request.Description,
+            NameEn = translation.NameEn,
+            NameMk = translation.NameMk,
+            NameSq = translation.NameSq,
+            DescriptionEn = translation.DescriptionEn,
+            DescriptionMk = translation.DescriptionMk,
+            DescriptionSq = translation.DescriptionSq,
             IsApproved = true
         };
 
@@ -51,15 +60,21 @@ public class ServiceCategoryService(IServiceCategoryRepository serviceCategoryRe
 
     public async Task<ServiceCategoryResponse> SuggestAsync(Guid userId, CreateServiceCategoryRequest request)
     {
-        if (await serviceCategoryRepository.GetByNameAsync(request.Name) is not null)
+        var translation = await translationService.TranslateCategoryAsync(request.Name, request.Description);
+
+        if (await serviceCategoryRepository.FindByAnyNameAsync(translation.NameEn, translation.NameMk, translation.NameSq) is not null)
         {
             throw new ConflictException($"A service category named '{request.Name}' already exists.");
         }
 
         var category = new ServiceCategory
         {
-            Name = request.Name,
-            Description = request.Description,
+            NameEn = translation.NameEn,
+            NameMk = translation.NameMk,
+            NameSq = translation.NameSq,
+            DescriptionEn = translation.DescriptionEn,
+            DescriptionMk = translation.DescriptionMk,
+            DescriptionSq = translation.DescriptionSq,
             IsApproved = false,
             SuggestedByUserId = userId
         };
@@ -88,8 +103,21 @@ public class ServiceCategoryService(IServiceCategoryRepository serviceCategoryRe
         var category = await serviceCategoryRepository.GetByIdAsync(id)
             ?? throw new NotFoundException($"Service category '{id}' was not found.");
 
-        if (request.Name is not null) category.Name = request.Name;
-        if (request.Description is not null) category.Description = request.Description;
+        // Re-translate whenever the name or description actually changes, so all three
+        // languages stay in sync with each other rather than only updating one.
+        if (request.Name is not null || request.Description is not null)
+        {
+            var nameToTranslate = request.Name ?? category.NameEn;
+            var descriptionToTranslate = request.Description ?? category.DescriptionEn;
+            var translation = await translationService.TranslateCategoryAsync(nameToTranslate, descriptionToTranslate);
+
+            category.NameEn = translation.NameEn;
+            category.NameMk = translation.NameMk;
+            category.NameSq = translation.NameSq;
+            category.DescriptionEn = translation.DescriptionEn;
+            category.DescriptionMk = translation.DescriptionMk;
+            category.DescriptionSq = translation.DescriptionSq;
+        }
 
         serviceCategoryRepository.Update(category);
         await serviceCategoryRepository.SaveChangesAsync();

@@ -6,7 +6,9 @@ public class ConversationSummaryResponse
 {
     public Guid BookingId { get; set; }
     public BookingStatus BookingStatus { get; set; }
-    public string ServiceCategoryName { get; set; } = string.Empty;
+    public string ServiceCategoryNameEn { get; set; } = string.Empty;
+    public string ServiceCategoryNameMk { get; set; } = string.Empty;
+    public string ServiceCategoryNameSq { get; set; } = string.Empty;
     public Guid ClientId { get; set; }
     public Guid CraftsmanProfileId { get; set; }
     public Guid OtherPartyId { get; set; }
