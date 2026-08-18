@@ -5,7 +5,6 @@ using MajstorHub.Api.Models;
 using MajstorHub.Api.Models.Enums;
 using MajstorHub.Api.Repositories.Interfaces;
 using MajstorHub.Api.Services.Interfaces;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 
 namespace MajstorHub.Api.Services;
@@ -14,7 +13,7 @@ public class BookingService(
     IBookingRepository bookingRepository,
     ICraftsmanProfileRepository craftsmanProfileRepository,
     IUserRepository userRepository,
-    IWebHostEnvironment webHostEnvironment) : IBookingService
+    IFileStorageService fileStorageService) : IBookingService
 {
     private static readonly string[] AllowedImageExtensions = [".jpg", ".jpeg", ".png"];
     private const int MaxPhotosPerBooking = 6;
@@ -147,21 +146,15 @@ public class BookingService(
             }
         }
 
-        var uploadsPath = Path.Combine(webHostEnvironment.ContentRootPath, "Uploads", "bookings", bookingId.ToString());
-        Directory.CreateDirectory(uploadsPath);
-
         foreach (var file in files)
         {
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
             var fileName = $"{Guid.NewGuid()}{extension}";
-            var filePath = Path.Combine(uploadsPath, fileName);
 
-            await using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
+            await using var stream = file.OpenReadStream();
+            var photoUrl = await fileStorageService.UploadAsync($"bookings/{bookingId}/{fileName}", stream, file.ContentType);
 
-            booking.PhotoUrls.Add($"/uploads/bookings/{bookingId}/{fileName}");
+            booking.PhotoUrls.Add(photoUrl);
         }
 
         bookingRepository.Update(booking);

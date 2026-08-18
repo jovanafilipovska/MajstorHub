@@ -1,9 +1,11 @@
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 export const API_ORIGIN = API_URL?.replace(/\/api\/?$/, '');
 
-// Server responses reference uploaded files (e.g. profile photos) by a
-// path relative to the API origin, not the `/api` route prefix.
+// Server responses reference uploaded files (e.g. profile photos) either as
+// an absolute Supabase Storage URL, or (legacy) a path relative to the API
+// origin, not the `/api` route prefix.
 export function resolveMediaUrl(path: string): string {
+  if (/^https?:\/\//.test(path)) return path;
   return API_ORIGIN ? `${API_ORIGIN}${path}` : path;
 }
 

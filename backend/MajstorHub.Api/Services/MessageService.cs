@@ -5,7 +5,6 @@ using MajstorHub.Api.Mappings;
 using MajstorHub.Api.Models;
 using MajstorHub.Api.Repositories.Interfaces;
 using MajstorHub.Api.Services.Interfaces;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 
@@ -15,7 +14,7 @@ public class MessageService(
     IMessageRepository messageRepository,
     IBookingRepository bookingRepository,
     IHubContext<ChatHub> hubContext,
-    IWebHostEnvironment webHostEnvironment) : IMessageService
+    IFileStorageService fileStorageService) : IMessageService
 {
     private static readonly string[] AllowedImageExtensions = [".jpg", ".jpeg", ".png"];
 
@@ -67,23 +66,17 @@ public class MessageService(
             throw new ValidationException("Only JPG and PNG images are supported.");
         }
 
-        var uploadsPath = Path.Combine(webHostEnvironment.ContentRootPath, "Uploads", "messages", bookingId.ToString());
-        Directory.CreateDirectory(uploadsPath);
-
         var fileName = $"{Guid.NewGuid()}{extension}";
-        var filePath = Path.Combine(uploadsPath, fileName);
 
-        await using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await file.CopyToAsync(stream);
-        }
+        await using var stream = file.OpenReadStream();
+        var photoUrl = await fileStorageService.UploadAsync($"messages/{bookingId}/{fileName}", stream, file.ContentType);
 
         var message = new Message
         {
             Id = Guid.NewGuid(),
             BookingId = booking.Id,
             SenderId = senderId,
-            PhotoUrl = $"/uploads/messages/{bookingId}/{fileName}",
+            PhotoUrl = photoUrl,
             CreatedAt = DateTimeOffset.UtcNow
         };
 

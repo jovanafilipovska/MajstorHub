@@ -3,14 +3,13 @@ using MajstorHub.Api.Exceptions;
 using MajstorHub.Api.Mappings;
 using MajstorHub.Api.Repositories.Interfaces;
 using MajstorHub.Api.Services.Interfaces;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using BC = BCrypt.Net.BCrypt;
 
 namespace MajstorHub.Api.Services;
 
-public class UserService(IUserRepository userRepository, IWebHostEnvironment webHostEnvironment) : IUserService
+public class UserService(IUserRepository userRepository, IFileStorageService fileStorageService) : IUserService
 {
     private static readonly string[] AllowedImageExtensions = [".jpg", ".jpeg", ".png"];
     public async Task<UserResponse> GetByIdAsync(Guid id)
@@ -85,18 +84,10 @@ public class UserService(IUserRepository userRepository, IWebHostEnvironment web
             throw new ValidationException("Only JPG and PNG images are supported.");
         }
 
-        var uploadsPath = Path.Combine(webHostEnvironment.ContentRootPath, "Uploads", "avatars");
-        Directory.CreateDirectory(uploadsPath);
-
         var fileName = $"{userId}{extension}";
-        var filePath = Path.Combine(uploadsPath, fileName);
 
-        await using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await file.CopyToAsync(stream);
-        }
-
-        user.ProfileImageUrl = $"/uploads/avatars/{fileName}";
+        await using var stream = file.OpenReadStream();
+        user.ProfileImageUrl = await fileStorageService.UploadAsync($"avatars/{fileName}", stream, file.ContentType);
         userRepository.Update(user);
         await userRepository.SaveChangesAsync();
 
@@ -111,24 +102,14 @@ public class UserService(IUserRepository userRepository, IWebHostEnvironment web
         if (user.ProfileImageUrl is not null)
         {
             var fileName = Path.GetFileName(user.ProfileImageUrl);
-            var filePath = Path.Combine(webHostEnvironment.ContentRootPath, "Uploads", "avatars", fileName);
             try
             {
-                if (File.Exists(filePath))
-                {
-                    File.Delete(filePath);
-                }
+                await fileStorageService.DeleteAsync($"avatars/{fileName}");
             }
-            catch (IOException)
+            catch (InvalidOperationException)
             {
-                // File briefly locked (e.g. still being streamed to a client, or scanned by
-                // antivirus) - not worth failing the request over. It's an orphaned upload
-                // at worst, cleaned up next time a file with the same name is written.
-            }
-            catch (UnauthorizedAccessException)
-            {
-                // Same reasoning as above: a locked/permission-denied file shouldn't block
-                // the user from clearing their profile photo.
+                // Not worth failing the request over - it's an orphaned upload at worst,
+                // cleaned up next time a file with the same name is written.
             }
 
             user.ProfileImageUrl = null;

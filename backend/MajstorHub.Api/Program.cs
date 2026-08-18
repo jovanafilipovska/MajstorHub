@@ -11,7 +11,6 @@ using MajstorHub.Api.Services;
 using MajstorHub.Api.Services.Chatbot;
 using MajstorHub.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -32,7 +31,9 @@ builder.Services.AddDbContext<MajstorHubDbContext>(options =>
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<GroqSettings>(builder.Configuration.GetSection("Groq"));
+builder.Services.Configure<SupabaseStorageSettings>(builder.Configuration.GetSection("Supabase"));
 builder.Services.AddHttpClient<IGroqClient, GroqClient>();
+builder.Services.AddHttpClient<IFileStorageService, SupabaseStorageService>();
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt configuration section is missing.");
 
@@ -101,14 +102,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "Uploads");
-Directory.CreateDirectory(uploadsPath);
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(uploadsPath),
-    RequestPath = "/uploads"
-});
-
 // No HTTPS redirect for now: this API is reached over plain HTTP from
 // phones on the LAN (during Expo testing) and from the Docker container,
 // neither of which trust the local dev HTTPS certificate.
@@ -117,6 +110,11 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<ChatHub>("/hubs/chat");
+
+using (var migrationScope = app.Services.CreateScope())
+{
+    await migrationScope.ServiceProvider.GetRequiredService<MajstorHubDbContext>().Database.MigrateAsync();
+}
 
 await DbSeeder.SeedAdminAsync(app.Services, app.Configuration);
 
