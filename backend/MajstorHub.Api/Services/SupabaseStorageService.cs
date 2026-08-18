@@ -17,6 +17,9 @@ public class SupabaseStorageService(HttpClient httpClient, IOptions<SupabaseStor
         };
         request.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.ServiceRoleKey);
+        // Supabase's gateway (Kong) validates the `apikey` header separately from
+        // Authorization - without it, requests are rejected before reaching Storage.
+        request.Headers.Add("apikey", _settings.ServiceRoleKey);
         // Supabase Storage rejects a second PUT to an existing path unless told to overwrite.
         request.Headers.Add("x-upsert", "true");
 
@@ -34,6 +37,7 @@ public class SupabaseStorageService(HttpClient httpClient, IOptions<SupabaseStor
     {
         using var request = new HttpRequestMessage(HttpMethod.Delete, $"{_settings.Url}/storage/v1/object/{_settings.Bucket}/{path}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.ServiceRoleKey);
+        request.Headers.Add("apikey", _settings.ServiceRoleKey);
 
         using var response = await httpClient.SendAsync(request, ct);
         if (!response.IsSuccessStatusCode && response.StatusCode != System.Net.HttpStatusCode.NotFound)
