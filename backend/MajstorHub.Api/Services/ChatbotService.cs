@@ -186,7 +186,9 @@ public class ChatbotService(
             sb.AppendLine("  1) They describe a problem/job and want a craftsman and/or a price -> use search_craftsmen and estimate_cost.");
             sb.AppendLine("  2) They ask about THEIR OWN bookings (who they booked, status, price, schedule) -> use get_my_bookings.");
             sb.AppendLine("  3) They ask about their favorites/saved pros -> use get_my_favorites.");
-            sb.AppendLine("  4) They ask how to do something in the app (e.g. \"how do I book\", \"how do I leave a review\") -> answer directly " +
+            sb.AppendLine("  4) They ask about reviews THEY left (did I review X, what did I say, which bookings still need a review) -> " +
+                          "use get_my_reviews. Never confuse this with reviews left ABOUT them - clients don't receive reviews.");
+            sb.AppendLine("  5) They ask how to do something in the app (e.g. \"how do I book\", \"how do I leave a review\") -> answer directly " +
                           "from the app guide below in 1-3 sentences. Do NOT call any tool for this, and do NOT phrase it like a recommendation " +
                           "(never say things like \"I found...\" or \"the estimated cost is...\" for a how-to question).");
             sb.AppendLine("- Always call search_craftsmen before recommending anyone by name. Never invent a craftsman, rating, or price.");

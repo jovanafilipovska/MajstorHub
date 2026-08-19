@@ -112,6 +112,15 @@ public class ChatbotToolService(
                 Description = "List the craftsmen the caller has saved as favorites, with their category, rating, and hourly rate.",
                 Parameters = new { type = "object", properties = new { } }
             });
+            tools.Add(new GroqToolDefinition
+            {
+                Name = "get_my_reviews",
+                Description = "List the reviews the caller has left for craftsmen, including the rating, comment, and which " +
+                              "craftsman/job each one was for, plus completed bookings they haven't reviewed yet. Use this to " +
+                              "answer questions like 'did I leave a review for X', 'what did I say in my review', or 'which " +
+                              "bookings do I still need to review'.",
+                Parameters = new { type = "object", properties = new { } }
+            });
         }
 
         if (mode == ChatbotMode.Craftsman)
@@ -163,6 +172,7 @@ public class ChatbotToolService(
             "get_my_recent_reviews" => new ChatbotToolExecutionResult(await GetMyRecentReviewsAsync(context)),
             "get_my_bookings" => new ChatbotToolExecutionResult(await GetMyBookingsAsync(args, context)),
             "get_my_favorites" => await GetMyFavoritesAsync(context),
+            "get_my_reviews" => new ChatbotToolExecutionResult(await GetMyReviewsAsync(context)),
             "suggest_quote" => new ChatbotToolExecutionResult(await SuggestQuoteAsync(args, context)),
             _ => new ChatbotToolExecutionResult(new { error = $"Unknown tool '{toolName}'." })
         };
@@ -365,6 +375,39 @@ public class ChatbotToolService(
             .ToList();
 
         return new { resultCount = results.Count, bookings = results };
+    }
+
+    private async Task<object> GetMyReviewsAsync(ChatbotToolContext context)
+    {
+        var bookings = await bookingRepository.GetByClientIdAsync(context.UserId);
+        var completed = bookings.Where(b => b.Status == BookingStatus.Completed).ToList();
+
+        var myReviews = completed
+            .Where(b => b.Review is not null)
+            .OrderByDescending(b => b.Review!.CreatedAt)
+            .Select(b => new
+            {
+                craftsmanName = b.CraftsmanProfile.BusinessName ?? b.CraftsmanProfile.User.FullName,
+                serviceCategoryName = b.ServiceCategory.NameEn,
+                rating = b.Review!.Rating,
+                comment = b.Review.Comment,
+                hasPhotos = b.Review.PhotoUrls.Count > 0,
+                reviewedAt = ToLocal(b.Review.CreatedAt)
+            })
+            .ToList();
+
+        var unreviewedCompletedBookings = completed
+            .Where(b => b.Review is null)
+            .OrderByDescending(b => b.UpdatedAt)
+            .Select(b => new
+            {
+                craftsmanName = b.CraftsmanProfile.BusinessName ?? b.CraftsmanProfile.User.FullName,
+                serviceCategoryName = b.ServiceCategory.NameEn,
+                completedAt = ToLocal(b.UpdatedAt)
+            })
+            .ToList();
+
+        return new { reviewCount = myReviews.Count, myReviews, unreviewedCompletedBookings };
     }
 
     private async Task<ChatbotToolExecutionResult> GetMyFavoritesAsync(ChatbotToolContext context)
