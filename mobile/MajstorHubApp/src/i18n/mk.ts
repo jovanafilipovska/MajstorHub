@@ -177,6 +177,9 @@ export const mk: Translations = {
     messageButton: 'Порака',
     failedToLoad: 'Неуспешно вчитување на резервацијата.',
     failedToUpdate: 'Неуспешно ажурирање на резервацијата.',
+    estimatedPriceTitle: 'Проценета цена',
+    estimatedPriceLabel: 'Цена ($)',
+    estimatedPriceInvalid: 'Внесете важечка цена поголема од 0.',
   },
   leaveReview: {
     title: (name: string) => `Оцени го/ја ${name}`,

@@ -17,8 +17,9 @@ export function updateBookingStatus(
   id: string,
   status: BookingStatus,
   token: string,
+  priceQuote?: number,
 ): Promise<BookingResponse> {
-  return apiClient.patch<BookingResponse>(`/bookings/${id}/status`, { status }, token);
+  return apiClient.patch<BookingResponse>(`/bookings/${id}/status`, { status, priceQuote }, token);
 }
 
 export function uploadBookingPhotos(id: string, photoUris: string[], token: string): Promise<BookingResponse> {

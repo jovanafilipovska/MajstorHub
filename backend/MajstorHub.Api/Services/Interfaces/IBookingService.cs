@@ -11,6 +11,6 @@ public interface IBookingService
     Task<List<BookingResponse>> GetForClientAsync(Guid clientUserId);
     Task<List<BookingResponse>> GetForCraftsmanAsync(Guid craftsmanUserId);
     Task<List<BookingResponse>> GetForUserAsync(Guid userId);
-    Task<BookingResponse> UpdateStatusAsync(Guid bookingId, Guid requestingUserId, BookingStatus newStatus);
+    Task<BookingResponse> UpdateStatusAsync(Guid bookingId, Guid requestingUserId, BookingStatus newStatus, decimal? priceQuote);
     Task<BookingResponse> UploadPhotosAsync(Guid bookingId, Guid requestingUserId, List<IFormFile> files);
 }

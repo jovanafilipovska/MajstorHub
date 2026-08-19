@@ -181,6 +181,9 @@ export const en = {
     messageButton: 'Message',
     failedToLoad: 'Failed to load booking.',
     failedToUpdate: 'Failed to update booking.',
+    estimatedPriceTitle: 'Estimated price',
+    estimatedPriceLabel: 'Price ($)',
+    estimatedPriceInvalid: 'Enter a valid price greater than 0.',
   },
   leaveReview: {
     title: (name: string) => `Rate ${name}`,

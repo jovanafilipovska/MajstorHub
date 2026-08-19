@@ -37,7 +37,7 @@ public class BookingsController(IBookingService bookingService) : ControllerBase
     [HttpPatch("{id:guid}/status")]
     public async Task<ActionResult<BookingResponse>> UpdateStatus(Guid id, UpdateBookingStatusRequest request)
     {
-        var response = await bookingService.UpdateStatusAsync(id, User.GetUserId(), request.Status);
+        var response = await bookingService.UpdateStatusAsync(id, User.GetUserId(), request.Status, request.PriceQuote);
         return Ok(response);
     }
 

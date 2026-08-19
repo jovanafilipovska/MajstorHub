@@ -7,4 +7,6 @@ public class UpdateBookingStatusRequest
 {
     [Required]
     public BookingStatus Status { get; set; }
+
+    public decimal? PriceQuote { get; set; }
 }

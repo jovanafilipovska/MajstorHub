@@ -3,7 +3,7 @@ import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Avatar, Button, Dialog, HelperText, Icon, Portal, Text, useTheme } from 'react-native-paper';
+import { Avatar, Button, Dialog, HelperText, Icon, Portal, Text, TextInput, useTheme } from 'react-native-paper';
 import { getBooking, updateBookingStatus } from '../../api/bookings';
 import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
@@ -101,6 +101,9 @@ export function BookingDetailScreen({ route, navigation }: Props) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [pendingAction, setPendingAction] = useState<{ label: string; nextStatus: BookingStatus } | null>(null);
+  const [priceDialogOpen, setPriceDialogOpen] = useState(false);
+  const [priceInput, setPriceInput] = useState('');
+  const [priceInputError, setPriceInputError] = useState<string | null>(null);
 
   useAutoDismiss(actionError, setActionError);
 
@@ -119,19 +122,30 @@ export function BookingDetailScreen({ route, navigation }: Props) {
 
   useFocusEffect(load);
 
-  const applyStatus = async (nextStatus: BookingStatus) => {
+  const applyStatus = async (nextStatus: BookingStatus, priceQuote?: number) => {
     if (!token) return;
     setActionError(null);
     setSubmitting(true);
     try {
-      const updated = await updateBookingStatus(bookingId, nextStatus, token);
+      const updated = await updateBookingStatus(bookingId, nextStatus, token, priceQuote);
       setBooking(updated);
     } catch (err) {
       setActionError(apiErrorMessage(err, t, t.bookingDetail.failedToUpdate));
     } finally {
       setSubmitting(false);
       setPendingAction(null);
+      setPriceDialogOpen(false);
     }
+  };
+
+  const confirmPrice = () => {
+    const parsed = Number(priceInput.replace(',', '.'));
+    if (!priceInput.trim() || !Number.isFinite(parsed) || parsed <= 0) {
+      setPriceInputError(t.bookingDetail.estimatedPriceInvalid);
+      return;
+    }
+    setPriceInputError(null);
+    applyStatus('Accepted', parsed);
   };
 
   if (error) return <ErrorView message={error} onRetry={load} />;
@@ -266,7 +280,11 @@ export function BookingDetailScreen({ route, navigation }: Props) {
               loading={submitting}
               disabled={submitting}
               onPress={() => {
-                if (CONFIRM_STATUSES.includes(action.nextStatus)) {
+                if (action.nextStatus === 'Accepted') {
+                  setPriceInput('');
+                  setPriceInputError(null);
+                  setPriceDialogOpen(true);
+                } else if (CONFIRM_STATUSES.includes(action.nextStatus)) {
                   setPendingAction(action);
                 } else {
                   applyStatus(action.nextStatus);
@@ -301,6 +319,27 @@ export function BookingDetailScreen({ route, navigation }: Props) {
           <Dialog.Actions>
             <Button onPress={() => setPendingAction(null)}>{t.common.back}</Button>
             <Button onPress={() => pendingAction && applyStatus(pendingAction.nextStatus)}>{t.common.confirm}</Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog visible={priceDialogOpen} onDismiss={() => setPriceDialogOpen(false)}>
+          <Dialog.Title>{t.bookingDetail.estimatedPriceTitle}</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label={t.bookingDetail.estimatedPriceLabel}
+              value={priceInput}
+              onChangeText={setPriceInput}
+              mode="outlined"
+              keyboardType="decimal-pad"
+              autoFocus
+            />
+            {priceInputError && <HelperText type="error">{priceInputError}</HelperText>}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setPriceDialogOpen(false)}>{t.common.back}</Button>
+            <Button onPress={confirmPrice} loading={submitting} disabled={submitting}>
+              {t.common.confirm}
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>

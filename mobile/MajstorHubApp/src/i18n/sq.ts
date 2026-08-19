@@ -177,6 +177,9 @@ export const sq: Translations = {
     messageButton: 'Mesazh',
     failedToLoad: 'Dështoi ngarkimi i rezervimit.',
     failedToUpdate: 'Dështoi përditësimi i rezervimit.',
+    estimatedPriceTitle: 'Çmimi i vlerësuar',
+    estimatedPriceLabel: 'Çmimi ($)',
+    estimatedPriceInvalid: 'Vendosni një çmim të vlefshëm më të madh se 0.',
   },
   leaveReview: {
     title: (name: string) => `Vlerëso ${name}`,

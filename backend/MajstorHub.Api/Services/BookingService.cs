@@ -88,7 +88,7 @@ public class BookingService(
             .ToList();
     }
 
-    public async Task<BookingResponse> UpdateStatusAsync(Guid bookingId, Guid requestingUserId, BookingStatus newStatus)
+    public async Task<BookingResponse> UpdateStatusAsync(Guid bookingId, Guid requestingUserId, BookingStatus newStatus, decimal? priceQuote)
     {
         var booking = await GetOwnedBookingAsync(bookingId, requestingUserId);
         var isCraftsman = requestingUserId == booking.CraftsmanProfileId;
@@ -106,6 +106,16 @@ public class BookingService(
         {
             throw new InvalidTransitionException(
                 $"Cannot transition booking from '{booking.Status}' to '{newStatus}' as this participant.");
+        }
+
+        if (newStatus == BookingStatus.Accepted)
+        {
+            if (priceQuote is null or <= 0)
+            {
+                throw new ValidationException("An estimated price is required to accept a booking.");
+            }
+
+            booking.PriceQuote = priceQuote.Value;
         }
 
         booking.Status = newStatus;
