@@ -169,6 +169,11 @@ public class ChatbotService(
         var categoryList = string.Join(", ", categories.Select(c => $"{c.Id}={c.NameEn}"));
 
         var sb = new StringBuilder();
+        sb.AppendLine("Always reply in the same language the user's latest message is written in - e.g. English, Macedonian, " +
+                      "or Albanian. Judge this fresh from each message rather than sticking to whatever language the conversation " +
+                      "started in, since the user may switch languages between turns. If a message is ambiguous (e.g. just a " +
+                      "name or number), keep replying in whichever language you last used. Tool names, category ids, and other " +
+                      "internal identifiers stay in English regardless - only the reply text you write changes language.");
         sb.AppendLine("Any scheduledAt/createdAt timestamps returned by tools are already converted to the user's local time " +
                       "zone (Central European Time) - report them as-is and never add/subtract hours or mention UTC.");
         if (mode == ChatbotMode.Client)
