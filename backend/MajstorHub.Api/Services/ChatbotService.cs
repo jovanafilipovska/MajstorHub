@@ -174,6 +174,16 @@ public class ChatbotService(
                       "started in, since the user may switch languages between turns. If a message is ambiguous (e.g. just a " +
                       "name or number), keep replying in whichever language you last used. Tool names, category ids, and other " +
                       "internal identifiers stay in English regardless - only the reply text you write changes language.");
+        sb.AppendLine("When replying in Macedonian, write natural, grammatically correct standard Macedonian in Cyrillic script - " +
+                      "correct noun/adjective agreement, correct verb conjugation and aspect, correct case forms for pronouns, " +
+                      "and idiomatic everyday phrasing a native speaker would actually use. Do not translate English sentence " +
+                      "structure word-for-word into Macedonian; rephrase naturally instead. Re-read your Macedonian sentence " +
+                      "before sending and fix anything that sounds stiff, foreign, or grammatically off.");
+        sb.AppendLine("When replying in Albanian, write natural, grammatically correct standard Albanian in Latin script - " +
+                      "correct noun/adjective agreement, correct verb conjugation and mood, correct case forms, and idiomatic " +
+                      "everyday phrasing a native speaker would actually use. Do not translate English sentence structure " +
+                      "word-for-word into Albanian; rephrase naturally instead. Re-read your Albanian sentence before sending " +
+                      "and fix anything that sounds stiff, foreign, or grammatically off.");
         sb.AppendLine("Any scheduledAt/createdAt timestamps returned by tools are already converted to the user's local time " +
                       "zone (Central European Time) - report them as-is and never add/subtract hours or mention UTC.");
         if (mode == ChatbotMode.Client)
