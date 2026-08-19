@@ -84,7 +84,7 @@ export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBooki
   ).length;
   const weeklyEarnings = myBookings
     .filter((b) => b.status === 'Completed' && isThisCalendarWeek(b.updatedAt))
-    .reduce((sum, b) => sum + (b.priceQuote ?? 0), 0);
+    .reduce((sum, b) => sum + (b.priceQuote ?? profile.hourlyRate), 0);
 
   const toggleAvailable = async () => {
     if (!token) return;
