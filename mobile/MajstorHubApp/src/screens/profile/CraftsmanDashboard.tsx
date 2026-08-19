@@ -29,8 +29,17 @@ function isToday(iso: string): boolean {
   );
 }
 
-function withinLastDays(iso: string, days: number): boolean {
-  return Date.now() - new Date(iso).getTime() <= days * 24 * 60 * 60 * 1000;
+// Calendar week (Monday 00:00 through the following Monday 00:00), not a
+// rolling last-7-days window - so earnings reset at the start of each week
+// rather than always showing a trailing average.
+function isThisCalendarWeek(iso: string): boolean {
+  const date = new Date(iso);
+  const now = new Date();
+  const day = now.getDay();
+  const daysSinceMonday = day === 0 ? 6 : day - 1;
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysSinceMonday);
+  const weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7);
+  return date >= weekStart && date < weekEnd;
 }
 
 function StatTile({ label, value }: { label: string; value: string }) {
@@ -74,7 +83,7 @@ export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBooki
     (b) => b.status === 'Accepted' && b.scheduledAt && isToday(b.scheduledAt),
   ).length;
   const weeklyEarnings = myBookings
-    .filter((b) => b.status === 'Completed' && withinLastDays(b.updatedAt, 7))
+    .filter((b) => b.status === 'Completed' && isThisCalendarWeek(b.updatedAt))
     .reduce((sum, b) => sum + (b.priceQuote ?? 0), 0);
 
   const toggleAvailable = async () => {
