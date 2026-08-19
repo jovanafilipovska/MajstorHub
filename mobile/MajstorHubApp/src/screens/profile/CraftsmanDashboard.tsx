@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Avatar, Button, HelperText, Switch, Text, useTheme } from 'react-native-paper';
+import { Avatar, Button, Dialog, HelperText, Portal, Switch, Text, TextInput, useTheme } from 'react-native-paper';
 import { updateBookingStatus } from '../../api/bookings';
 import { updateMyProfile } from '../../api/craftsmen';
 import { resolveMediaUrl } from '../../api/client';
@@ -62,6 +62,9 @@ export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBooki
   const [toggling, setToggling] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [priceDialogBookingId, setPriceDialogBookingId] = useState<string | null>(null);
+  const [priceInput, setPriceInput] = useState('');
+  const [priceInputError, setPriceInputError] = useState<string | null>(null);
 
   useAutoDismiss(error, setError);
 
@@ -88,18 +91,36 @@ export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBooki
     }
   };
 
-  const act = async (bookingId: string, status: 'Accepted' | 'Rejected') => {
+  const act = async (bookingId: string, status: 'Accepted' | 'Rejected', priceQuote?: number) => {
     if (!token) return;
     setError(null);
     setActioningId(bookingId);
     try {
-      const updated = await updateBookingStatus(bookingId, status, token);
+      const updated = await updateBookingStatus(bookingId, status, token, priceQuote);
       onBookingsChange((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
     } catch (err) {
       setError(apiErrorMessage(err, t, t.craftsmanDashboard.failedToUpdateBooking));
     } finally {
       setActioningId(null);
+      setPriceDialogBookingId(null);
     }
+  };
+
+  const openPriceDialog = (bookingId: string) => {
+    setPriceInput('');
+    setPriceInputError(null);
+    setPriceDialogBookingId(bookingId);
+  };
+
+  const confirmPrice = () => {
+    if (!priceDialogBookingId) return;
+    const parsed = Number(priceInput.replace(',', '.'));
+    if (!priceInput.trim() || !Number.isFinite(parsed) || parsed <= 0) {
+      setPriceInputError(t.bookingDetail.estimatedPriceInvalid);
+      return;
+    }
+    setPriceInputError(null);
+    act(priceDialogBookingId, 'Accepted', parsed);
   };
 
   return (
@@ -180,7 +201,7 @@ export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBooki
                 style={styles.requestButton}
                 loading={actioningId === booking.id}
                 disabled={actioningId !== null}
-                onPress={() => act(booking.id, 'Accepted')}
+                onPress={() => openPriceDialog(booking.id)}
               >
                 {t.craftsmanDashboard.accept}
               </Button>
@@ -190,6 +211,29 @@ export function CraftsmanDashboard({ profile, bookings, onProfileChange, onBooki
       )}
 
       {error && <HelperText type="error">{error}</HelperText>}
+
+      <Portal>
+        <Dialog visible={priceDialogBookingId !== null} onDismiss={() => setPriceDialogBookingId(null)}>
+          <Dialog.Title>{t.bookingDetail.estimatedPriceTitle}</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label={t.bookingDetail.estimatedPriceLabel}
+              value={priceInput}
+              onChangeText={setPriceInput}
+              mode="outlined"
+              keyboardType="decimal-pad"
+              autoFocus
+            />
+            {priceInputError && <HelperText type="error">{priceInputError}</HelperText>}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setPriceDialogBookingId(null)}>{t.common.back}</Button>
+            <Button onPress={confirmPrice} loading={actioningId !== null} disabled={actioningId !== null}>
+              {t.common.confirm}
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }

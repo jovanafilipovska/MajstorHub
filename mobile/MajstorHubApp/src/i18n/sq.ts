@@ -145,6 +145,7 @@ export const sq: Translations = {
     errors: {
       locationPermission: 'Kërkohet leje për vendndodhjen për të shënuar adresën tuaj në hartë.',
       locationFailed: 'Dështoi marrja e vendndodhjes suaj. Kontrolloni cilësimet e vendndodhjes dhe provoni përsëri.',
+      addressNotFound: 'Nuk e gjetëm atë adresë. Provoni një adresë më specifike, ose shënoni vendndodhjen tuaj aktuale.',
       photoPermission: 'Kërkohet leje për galerinë e fotove për të bashkangjitur foto.',
       addressRequired: 'Vendosni një adresë për punën.',
       describeRequired: 'Përshkruani problemin.',

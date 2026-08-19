@@ -149,6 +149,7 @@ export const en = {
     errors: {
       locationPermission: 'Location permission is required to pin your address on the map.',
       locationFailed: 'Failed to get your location. Check your device location settings and try again.',
+      addressNotFound: "Couldn't find that address. Try a more specific one, or pin your current location instead.",
       photoPermission: 'Photo library permission is required to attach photos.',
       addressRequired: 'Enter an address for the job.',
       describeRequired: 'Describe the problem.',

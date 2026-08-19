@@ -47,6 +47,7 @@ export function CreateBookingScreen({ route, navigation }: Props) {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locating, setLocating] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
   const [description, setDescription] = useState('');
@@ -84,6 +85,34 @@ export function CreateBookingScreen({ route, navigation }: Props) {
       setLocationError(t.createBooking.errors.locationFailed);
     } finally {
       setLocating(false);
+    }
+  }, [address, t]);
+
+  // Lets a typed address (e.g. "Skopje" or a street address) pin the map
+  // location too, not just GPS - runs when the address field loses focus so
+  // it fires once per edit rather than on every keystroke.
+  const geocodeTypedAddress = useCallback(async () => {
+    const trimmed = address.trim();
+    if (!trimmed) return;
+    setLocationError(null);
+    setGeocoding(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setLocationError(t.createBooking.errors.locationPermission);
+        return;
+      }
+      const [result] = await Location.geocodeAsync(trimmed);
+      if (!result) {
+        setLocationError(t.createBooking.errors.addressNotFound);
+        return;
+      }
+      setLatitude(result.latitude);
+      setLongitude(result.longitude);
+    } catch {
+      setLocationError(t.createBooking.errors.locationFailed);
+    } finally {
+      setGeocoding(false);
     }
   }, [address, t]);
 
@@ -193,7 +222,15 @@ export function CreateBookingScreen({ route, navigation }: Props) {
               {t.createBooking.bookingWith(craftsmanName)}
             </Text>
 
-            <TextInput label={t.createBooking.addressLabel} value={address} onChangeText={setAddress} mode="outlined" multiline />
+            <TextInput
+              label={t.createBooking.addressLabel}
+              value={address}
+              onChangeText={setAddress}
+              onBlur={geocodeTypedAddress}
+              mode="outlined"
+              multiline
+              right={geocoding ? <TextInput.Icon icon="loading" /> : undefined}
+            />
 
             <Button mode="outlined" onPress={captureLocation} loading={locating} disabled={locating} icon="crosshairs-gps">
               {latitude != null ? t.createBooking.refreshLocation : t.createBooking.pinLocation}
