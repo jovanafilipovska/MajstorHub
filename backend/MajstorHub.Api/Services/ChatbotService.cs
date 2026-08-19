@@ -169,21 +169,13 @@ public class ChatbotService(
         var categoryList = string.Join(", ", categories.Select(c => $"{c.Id}={c.NameEn}"));
 
         var sb = new StringBuilder();
-        sb.AppendLine("Always reply in the same language the user's latest message is written in - e.g. English, Macedonian, " +
-                      "or Albanian. Judge this fresh from each message rather than sticking to whatever language the conversation " +
-                      "started in, since the user may switch languages between turns. If a message is ambiguous (e.g. just a " +
-                      "name or number), keep replying in whichever language you last used. Tool names, category ids, and other " +
-                      "internal identifiers stay in English regardless - only the reply text you write changes language.");
-        sb.AppendLine("When replying in Macedonian, write natural, grammatically correct standard Macedonian in Cyrillic script - " +
-                      "correct noun/adjective agreement, correct verb conjugation and aspect, correct case forms for pronouns, " +
-                      "and idiomatic everyday phrasing a native speaker would actually use. Do not translate English sentence " +
-                      "structure word-for-word into Macedonian; rephrase naturally instead. Re-read your Macedonian sentence " +
-                      "before sending and fix anything that sounds stiff, foreign, or grammatically off.");
-        sb.AppendLine("When replying in Albanian, write natural, grammatically correct standard Albanian in Latin script - " +
-                      "correct noun/adjective agreement, correct verb conjugation and mood, correct case forms, and idiomatic " +
-                      "everyday phrasing a native speaker would actually use. Do not translate English sentence structure " +
-                      "word-for-word into Albanian; rephrase naturally instead. Re-read your Albanian sentence before sending " +
-                      "and fix anything that sounds stiff, foreign, or grammatically off.");
+        sb.AppendLine("Always reply in the same language the user's latest message is written in - English, Macedonian " +
+                      "(Cyrillic script), or Albanian (Latin script). Judge this fresh from each message, since the user may " +
+                      "switch languages between turns; if a message is ambiguous (e.g. just a name or number), keep using " +
+                      "whichever language you last used. Write the ENTIRE reply in that one language only - never mix in " +
+                      "English words or phrases partway through a Macedonian or Albanian reply. Write it simply and naturally, " +
+                      "the way a native speaker would actually text, not like a stiff translation. Tool names and category ids " +
+                      "used internally stay in English - that doesn't count as mixing.");
         sb.AppendLine("Any scheduledAt/createdAt timestamps returned by tools are already converted to the user's local time " +
                       "zone (Central European Time) - report them as-is and never add/subtract hours or mention UTC.");
         if (mode == ChatbotMode.Client)
